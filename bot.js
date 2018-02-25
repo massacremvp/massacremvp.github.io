@@ -14,7 +14,15 @@ const Discord = require('discord.js');
 var asciitable = require("asciitable");
 
 var mvpList = require('./mvplist.json');
-var config = require('./config.json');
+
+var config = {
+"botUserToken": process.env.BOT_USER_TOKEN,
+"userInputChannelName": process.env.USER_INPUT_CHANNEL_NAME,
+"mvpListChannelName": process.env.MVP_LIST_CHANNEL_NAME,
+"mvpAliveExpirationTimeMins": process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
+"mvpListRefreshRateSecs": process.env.MVP_LIST_REFRESH_RATE_MINS,
+"maxSelectionTimeSecs": process.env.MAX_SELECTION_TIME_SECS
+}
 
 const client = new Discord.Client();
 
