@@ -1,0 +1,19 @@
+{
+  "name": "yellow-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/victorgawk/yellow-tracker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/victorgawk/yellow-tracker/issues"
+  },
+  "homepage": "https://github.com/victorgawk/yellow-tracker#readme"
+}
