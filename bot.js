@@ -159,7 +159,7 @@ client.on('ready', () => {
 
 client.on('message', msg => {
   let guildState = guildMap.get(msg.channel.guild);
-  if (msg.channel.name === config.userInputChannelName) {
+  if (guildState && msg.channel.name === config.userInputChannelName) {
     if (guildState.userStateMap.has(msg.author)) {
       let userState = guildState.userStateMap.get(msg.author);
       let idx = msg.content;
