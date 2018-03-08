@@ -1,3 +1,9 @@
+const Discord = require('discord.js');
+const asciitable = require("asciitable");
+const mvpList = require('./mvplist.json');
+
+
+
 const helpMessage =
 "Usage:\n \
     !track <mvp_name> <minutes_ago>\n \
@@ -10,30 +16,6 @@ Examples:\n \
     INPUT: !track Dracula 20\n \
     OUTPUT: Dracula (gef_fild01) in 40 to 50 minutes.";
 
-const Discord = require('discord.js');
-var asciitable = require("asciitable");
-
-var config = {
-"guilds": process.env.GUILDS,
-"botUserToken": process.env.BOT_USER_TOKEN,
-"userInputChannelName": process.env.USER_INPUT_CHANNEL_NAME,
-"mvpListChannelName": process.env.MVP_LIST_CHANNEL_NAME,
-"mvpAliveExpirationTimeMins": process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
-"mvpListRefreshRateSecs": process.env.MVP_LIST_REFRESH_RATE_SECS,
-"maxSelectionTimeSecs": process.env.MAX_SELECTION_TIME_SECS
-}
-
-const client = new Discord.Client();
-const mvpList = require('./mvplist.json');
-
-function genMvpList() {
-  let anotherMvpList = [];
-  for (let mvp of mvpList) {
-    anotherMvpList.push(Object.assign({}, mvp));
-  }
-  return anotherMvpList;
-}
-
 var options = {
   skinny: true,
   intersectionCharacter: "x",
@@ -44,12 +26,29 @@ var options = {
   ],
 };
 
+var config = {
+"guilds": process.env.GUILDS,
+"botUserToken": process.env.BOT_USER_TOKEN,
+"userInputChannelName": process.env.USER_INPUT_CHANNEL_NAME,
+"mvpListChannelName": process.env.MVP_LIST_CHANNEL_NAME,
+"mvpAliveExpirationTimeMins": process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
+"mvpListRefreshRateSecs": process.env.MVP_LIST_REFRESH_RATE_SECS,
+"maxSelectionTimeSecs": process.env.MAX_SELECTION_TIME_SECS
+};
+
+const client = new Discord.Client();
+
 var guildMap = new Map();
-/*
-var mvpList = require('./mvplist.json');
-var mvpListMessage;
-var userStateMap = new Map();
-*/
+
+
+
+function genMvpList() {
+  let anotherMvpList = [];
+  for (let mvp of mvpList) {
+    anotherMvpList.push(Object.assign({}, mvp));
+  }
+  return anotherMvpList;
+}
 
 function findMvp(guildState, query) {
   let resultSet = new Set();
@@ -91,7 +90,7 @@ function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
   for (let mvp of guildState.mvpList) {
-    if (!mvp.r2) {
+    if (!mvp.r2 && mvp.r2 != 0) {
       mvp.r1 = -999;
       mvp.r2 = -999;
     }
