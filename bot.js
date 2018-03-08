@@ -1,40 +1,37 @@
 const helpMessage =
 "Usage:\n \
-    !track <mvp_name> <minutes_ago>\n \
-where <minutes_ago> is optional and means how many minutes ago the mvp is dead.\n \
+    !track mvp_name [minutes_ago]\n \
+where\n \
+    mvp_name is the mvp name or part of its name\n \
+    minutes_ago is optional and means how many minutes ago the mvp is dead.\n \
 \n \
 Examples:\n \
-    INPUT: !track Dracula\n \
-    OUTPUT: Dracula (gef_fild01) in 60 to 70 minutes.\n \
+    INPUT: !track dracula\n \
+    OUTPUT: Dracula (gef_dun01) in 60 to 70 minutes.\n \
 \n \
-    INPUT: !track Dracula 20\n \
-    OUTPUT: Dracula (gef_fild01) in 40 to 50 minutes.";
+    INPUT: !track dracula 20\n \
+    OUTPUT: Dracula (gef_dun01) in 40 to 50 minutes.";
+
+
 
 const Discord = require('discord.js');
 var asciitable = require("asciitable");
-
-var config = {
-"guilds": process.env.GUILDS,
-"botUserToken": process.env.BOT_USER_TOKEN,
-"userInputChannelName": process.env.USER_INPUT_CHANNEL_NAME,
-"mvpListChannelName": process.env.MVP_LIST_CHANNEL_NAME,
-"mvpAliveExpirationTimeMins": process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
-"mvpListRefreshRateSecs": process.env.MVP_LIST_REFRESH_RATE_SECS,
-"maxSelectionTimeSecs": process.env.MAX_SELECTION_TIME_SECS
-}
-
-const client = new Discord.Client();
+const { Pool } = require('pg');
 const mvpList = require('./mvplist.json');
 
-function genMvpList() {
-  let anotherMvpList = [];
-  for (let mvp of mvpList) {
-    anotherMvpList.push(Object.assign({}, mvp));
-  }
-  return anotherMvpList;
-}
 
-var options = {
+
+var config = {
+  databaseUrl: process.env.DATABASE_URL
+};
+
+var guildMap = new Map();
+
+
+
+const discordClient = new Discord.Client();
+
+const asciiTableOptions = {
   skinny: true,
   intersectionCharacter: "x",
   columns: [
@@ -44,16 +41,21 @@ var options = {
   ],
 };
 
-var guildMap = new Map();
-/*
-var mvpList = require('./mvplist.json');
-var mvpListMessage;
-var userStateMap = new Map();
-*/
+const pgPool = new Pool({connectionString: config.databaseUrl});
+
+
+
+function genMvpList() {
+  let anotherMvpList = [];
+  for (let mvp of mvpList) {
+    anotherMvpList.push(Object.assign({}, mvp));
+  }
+  return anotherMvpList;
+}
 
 function findMvp(guildState, query) {
   let resultSet = new Set();
-  for (let mvp of guildState.mvpList) {
+  for (let mvp of mvpList) {
     if (mvp["name"].toLowerCase().startsWith(query.toLowerCase())) {
       resultSet.add(mvp);
     }
@@ -68,10 +70,15 @@ function findMvp(guildState, query) {
   return resultSet;
 }
 
-function updateTime(guildState, mob, time) {
-  if (mob != null) {
-    mob.r1 = mob.t1 - time;
-    mob.r2 = mob.t2 - time;
+function updateTime(guildState, mvp, time, channel) {
+  if (mvp != null) {
+    let mvpState = guildState.mvpList.find(mvpState => mvpState.mvp === mvp);
+    if (!mvpState) {
+      mvpState = {mvp: mvp};
+      guildState.mvpList.push(mvpState);
+    }
+    mvpState.r1 = mvp.t1 - time;
+    mvpState.r2 = mvp.t2 - time;
     guildState.mvpList.sort(function(a, b){
       if(a.r1 > b.r1) {
         return 1;
@@ -84,30 +91,34 @@ function updateTime(guildState, mob, time) {
       }
     });
     refreshMvpList(guildState);
+    channel.send(fmtMsg(`${mvpState.mvp.name} (${mvpState.mvp.map}) in ${mvpState.r1} to ${mvpState.r2} minutes.`));
   }
 }
 
 function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
-  for (let mvp of guildState.mvpList) {
-    if (!mvp.r2) {
-      mvp.r1 = -999;
-      mvp.r2 = -999;
+  for (let mvpState of guildState.mvpList) {
+    if (!mvpState.r2 && mvpState.r2 != 0) {
+      console.log(mvpState.r2);
+      mvpState.r1 = -999;
+      mvpState.r2 = -999;
     }
-    if (mvp.r2 > -config.mvpAliveExpirationTimeMins){
-      let list = (mvp.r1>0) ? deadMvps : aliveMvps;
-      let respawn = `${Math.round(mvp.r1)} to ${Math.round(mvp.r2)} mins`;
-      list.push({name: fill(mvp.name,18), map: fill(mvp.map,10), respawn: fill(respawn,18)});
+    if (mvpState.r2 > -config.mvpAliveExpirationTimeMins){
+      let list = (mvpState.r1>0) ? deadMvps : aliveMvps;
+      let respawn = `${Math.round(mvpState.r1)} to ${Math.round(mvpState.r2)} mins`;
+      list.push({name: fill(mvpState.mvp.name,18), map: fill(mvpState.mvp.map,10), respawn: fill(respawn,18)});
+    } else {
+      guildState.mvpList.splice(guildState.mvpList.indexOf(mvpState), 1);
     }
   }
   let result = "";
   if (aliveMvps.length > 0) {
-    let tableAlive = asciitable(options, aliveMvps);
+    let tableAlive = asciitable(asciiTableOptions, aliveMvps);
     result += "ALIVE MVPS\n"+tableAlive;
   }
   if (deadMvps.length > 0) {
-    let tableDead = asciitable(options, deadMvps);
+    let tableDead = asciitable(asciiTableOptions, deadMvps);
     result += "\n\nDEAD MVPS\n"+tableDead;
   }
   if (aliveMvps.length == 0 && deadMvps.length == 0) {
@@ -128,36 +139,42 @@ function fill(str, num) {
   return res;
 }
 
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-  let guildNames = config.guilds.split(",");
-  for (let guildName of guildNames) {
-    let guild = client.guilds.find('name', guildName);
-    let guildState = {
-      mvpList: genMvpList(),
-      mvpListMessage: null,
-      userStateMap: new Map()
-    };
-    guildMap.set(guild, guildState);
-    let channel = guild.channels.find("name", config.mvpListChannelName);
-    channel.bulkDelete(1);
-    channel.send(fmtMsg("Starting list..."))
-    .then(function(message){
-      let guildState = guildMap.get(message.guild);
-      guildState.mvpListMessage = message;
-      refreshMvpList(guildState);
-      client.setInterval(function(){
-        for (let mvp of guildState.mvpList) {
-          mvp.r1 -= config.mvpListRefreshRateSecs/60;
-          mvp.r2 -= config.mvpListRefreshRateSecs/60;
-        }
-        refreshMvpList(guildState);
-      }, config.mvpListRefreshRateSecs*1000);
-    });
-  }
+discordClient.on('ready', () => {
+  console.log(`Logged in as ${discordClient.user.tag}!`);
+  pgPool.connect()
+    .then(pgClient => {
+      return pgClient.query('SELECT * FROM guild')
+        .then(res => {
+          pgClient.release();
+          for (let dbGuild of res.rows) {
+            let guild = discordClient.guilds.find('name', dbGuild.name);
+            let guildState = {
+              mvpList: [],
+              mvpListMessage: null,
+              userStateMap: new Map()
+            };
+            guildMap.set(guild, guildState);
+            let channel = guild.channels.find("name", config.mvpListChannelName);
+            channel.bulkDelete(1);
+            channel.send(fmtMsg("Starting list..."))
+            .then(function(message){
+              let guildState = guildMap.get(message.guild);
+              guildState.mvpListMessage = message;
+              refreshMvpList(guildState);
+              discordClient.setInterval(function(){
+                for (let mvp of guildState.mvpList) {
+                  mvp.r1 -= config.mvpListRefreshRateSecs/60;
+                  mvp.r2 -= config.mvpListRefreshRateSecs/60;
+                }
+                refreshMvpList(guildState);
+              }, config.mvpListRefreshRateSecs*1000);
+            });
+          }
+        })
+    })
 });
 
-client.on('message', msg => {
+discordClient.on('message', msg => {
   let guildState = guildMap.get(msg.channel.guild);
   if (guildState && msg.channel.name === config.userInputChannelName) {
     if (guildState.userStateMap.has(msg.author)) {
@@ -166,8 +183,7 @@ client.on('message', msg => {
       if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
         let mob = userState.resultList[idx-1];
         let time = userState.time;
-        updateTime(guildState, mob, time);
-        msg.channel.send(fmtMsg(`${mob.name} (${mob.map}) in ${mob.r1} to ${mob.r2} minutes.`));
+        updateTime(guildState, mob, time, msg.channel);
       } else {
         msg.channel.send(fmtMsg(`Error: invalid number \"${idx}\" for selection.`));
       }
@@ -184,8 +200,7 @@ client.on('message', msg => {
           let resultSet = findMvp(guildState, argv[1]);
           if (resultSet.size == 1) {
             let mob = resultSet.values().next().value;
-            updateTime(guildState, mob, time);
-            msg.channel.send(fmtMsg(`${mob.name} (${mob.map}) in ${mob.r1} to ${mob.r2} minutes.`));
+            updateTime(guildState, mob, time, msg.channel);
           } else if (resultSet.size > 1) {
             let msgStr = `More than one MVP has been found. Type the number of MVP you want to track:\n`;
             let i = 1;
@@ -198,7 +213,7 @@ client.on('message', msg => {
             msg.channel.send(fmtMsg(msgStr))
             .then(function(message){
               guildState.userStateMap.set(msg.author, {resultList: resultList, time: time});
-              client.setTimeout(function(){
+              discordClient.setTimeout(function(){
                 if (guildState.userStateMap.has(msg.author)) {
                   msg.channel.send(fmtMsg(`${msg.author.username}' selection time has been expired.`));
                   guildState.userStateMap.delete(msg.author);
@@ -217,4 +232,17 @@ client.on('message', msg => {
   }
 });
 
-client.login(config.botUserToken);
+pgPool.connect()
+  .then(pgClient => {
+    return pgClient.query('SELECT * FROM config')
+      .then(res => {
+        pgClient.release();
+        config.botUserToken = res.rows[0].bot_user_token;
+        config.userInputChannelName = res.rows[0].user_input_channel_name;
+        config.mvpListChannelName =  res.rows[0].mvp_list_channel_name;
+        config.mvpAliveExpirationTimeMins = res.rows[0].mvp_alive_expiration_time_mins;
+        config.mvpListRefreshRateSecs = res.rows[0].mvp_list_refresh_rate_secs;
+        config.maxSelectionTimeSecs = res.rows[0].max_selection_time_secs;
+        discordClient.login(config.botUserToken);
+      })
+  })
