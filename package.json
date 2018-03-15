@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "asciitable": "0.0.7",
-    "discord.js": "^11.3.0"
+    "pg": "^7.4.1",
+    "discord.js": "^11.3.0",
+    "ffmpeg-binaries": "^3.2.2-3",
+    "opusscript": "^0.2.7"
   },
   "repository": {
     "type": "git",
