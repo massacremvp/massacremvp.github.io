@@ -33,7 +33,6 @@ var config = {
 };
 
 var guildMap = new Map();
-
 const discordClient = new Discord.Client();
 
 const asciiTableOptions = {
