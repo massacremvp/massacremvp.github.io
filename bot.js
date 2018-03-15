@@ -156,8 +156,35 @@ function fill(str, num) {
   return res;
 }
 
+function prepareMvpListMsg(message){
+  let guildState = guildMap.get(message.guild.id);
+  guildState.mvpListMessage = message;
+  refreshMvpList(guildState);
+  discordClient.setInterval(function(){
+    let notify = false;
+    for (let mvp of guildState.mvpList) {
+      let oldR1 = mvp.r1;
+      mvp.r1 -= config.mvpListRefreshRateSecs/60;
+      mvp.r2 -= config.mvpListRefreshRateSecs/60;
+      if (Math.round(oldR1)==1 && Math.round(mvp.r1)==0) {
+        notify = true;
+      }
+    }
+    let voiceChannel = message.guild.channels.find("name", config.voiceChannelName); 
+    if (notify) {
+      voiceChannel.join().then(function(voiceConn) {
+        voiceConn.playFile(config.notifySoundFile);
+      });
+    } else {
+       voiceChannel.leave();
+    }
+    refreshMvpList(guildState);
+  }, config.mvpListRefreshRateSecs*1000);
+}
+
 discordClient.on('ready', () => {
   console.log(`Logged in as ${discordClient.user.tag}!`);
+
   for (let discordGuild of discordClient.guilds) {
     let guild = discordGuild[1];
     let guildState = {
@@ -168,32 +195,22 @@ discordClient.on('ready', () => {
     };
     guildMap.set(guild.id, guildState);
     let mvpListChannel = guild.channels.find("name", config.mvpListChannelName);
-    mvpListChannel.bulkDelete(1);
-    mvpListChannel.send(fmtMsg("Starting list..."))
-      .then(function(message){
-        let guildState = guildMap.get(message.guild.id);
-        guildState.mvpListMessage = message;
-        refreshMvpList(guildState);
-        discordClient.setInterval(function(){
-          let notify = false;
-          for (let mvp of guildState.mvpList) {
-            let oldR1 = mvp.r1;
-            mvp.r1 -= config.mvpListRefreshRateSecs/60;
-            mvp.r2 -= config.mvpListRefreshRateSecs/60;
-            if (Math.round(oldR1)==1 && Math.round(mvp.r1)==0) {
-              notify = true;
-            }
-          }
-          let voiceChannel = message.guild.channels.find("name", config.voiceChannelName); 
-          if (notify) {
-            voiceChannel.join().then(function(voiceConn) {
-              voiceConn.playFile(config.notifySoundFile);
+
+    mvpListChannel.fetchMessages({ limit: 1 })
+      .then(function(messages){
+        if (messages.size == 0) {
+          mvpListChannel.send(fmtMsg("Starting list..."))
+            .then(function(newMsg){
+              prepareMvpListMsg(newMsg);
+              guildState.mvpListMessage = newMsg;
             });
-          } else {
-             voiceChannel.leave();
+        } else {
+          let msg = messages.values().next().value;
+          if (msg.author === discordClient.user) {
+            prepareMvpListMsg(msg);
+            guildState.mvpListMessage = msg;
           }
-          refreshMvpList(guildState);
-        }, config.mvpListRefreshRateSecs*1000);
+        }
       });
   }
 
@@ -210,10 +227,7 @@ discordClient.on('ready', () => {
         let minsAgo = (new Date() - track.death_time)/(1000*60);
         let guildState = guildMap.get(track.id_guild);
         let mvp = mvpList.find(_mvp => _mvp.id === track.id_mvp);
-        console.log(`MVP ${mvp.name} tracked at ${track.death_time} for guild ID ${track.id_guild}`);
-        if (guildState) {
-          trackAux(guildState, mvp, minsAgo);
-        }
+        trackAux(guildState, mvp, minsAgo);
       }
     })
     pgClient.release()
