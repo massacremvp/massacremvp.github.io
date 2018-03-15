@@ -210,7 +210,10 @@ discordClient.on('ready', () => {
         let minsAgo = (new Date() - track.death_time)/(1000*60);
         let guildState = guildMap.get(track.id_guild);
         let mvp = mvpList.find(_mvp => _mvp.id === track.id_mvp);
-        trackAux(guildState, mvp, minsAgo);
+        console.log(`MVP ${mvp.name} tracked at ${track.death_time} for guild ID ${track.id_guild}`);
+        if (guildState) {
+          trackAux(guildState, mvp, minsAgo);
+        }
       }
     })
     pgClient.release()
