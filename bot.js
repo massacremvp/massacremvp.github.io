@@ -221,16 +221,18 @@ discordClient.on('ready', () => {
           pgClient.query('INSERT INTO guild(id)VALUES($1)', [discordGuild[0]]);
         }
       }
+      pgClient.query('SELECT * FROM mvp_guild').then(res => {
+        for (let track of res.rows) {
+          let minsAgo = (new Date() - track.death_time)/(1000*60);
+          let guildState = guildMap.get(track.id_guild);
+          if (guildState) {
+            let mvp = mvpList.find(_mvp => _mvp.id === track.id_mvp);
+            trackAux(guildState, mvp, minsAgo);
+          }
+        }
+        pgClient.release();
+      })
     })
-    pgClient.query('SELECT * FROM mvp_guild').then(res => {
-      for (let track of res.rows) {
-        let minsAgo = (new Date() - track.death_time)/(1000*60);
-        let guildState = guildMap.get(track.id_guild);
-        let mvp = mvpList.find(_mvp => _mvp.id === track.id_mvp);
-        trackAux(guildState, mvp, minsAgo);
-      }
-    })
-    pgClient.release()
   })
 });
 
