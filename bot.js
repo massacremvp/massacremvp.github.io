@@ -297,7 +297,7 @@ discordClient.on('message', msg => {
 pgPool.connect().then(pgClient => {
   pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\'').then(res => {
     if (res.rowCount === 0) {
-      pgClient.query(fs.readFileSync('yellowtracker.sql', 'utf8'));
+      pgClient.query(fs.readFileSync('sql/yellowtracker.sql', 'utf8'));
     }
     pgClient.query('SELECT * FROM mvp').then(res => {
       mvpList = res.rows;
