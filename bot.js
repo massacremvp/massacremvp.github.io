@@ -29,7 +29,9 @@ var config = {
   mvpAliveExpirationTimeMins: process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
   mvpListRefreshRateSecs: process.env.MVP_LIST_REFRESH_RATE_SECS,
   maxSelectionTimeSecs: process.env.MAX_SELECTION_TIME_SECS,
-  notifySoundFile: process.env.NOTIFY_SOUND_FILE
+  notifySoundFile: process.env.NOTIFY_SOUND_FILE,
+  miningInputChannelName: process.env.MINING_INPUT_CHANNEL_NAME,
+  miningListChannelName: process.env.MINING_LIST_CHANNEL_NAME,
 };
 
 var guildMap = new Map();
@@ -48,8 +50,115 @@ const asciiTableOptions = {
 const pgPool = new Pool({connectionString: config.databaseUrl});
 
 
+// mining
 
-function findMvp(guildState, query) {
+var miningMapList = [];
+
+const miningAsciiTableOptions = {
+  skinny: true,
+  intersectionCharacter: "x",
+  columns: [
+    {field: "map", name: "Map"},
+    {field: "respawn", name: "Respawn"},
+  ],
+};
+
+function findMiningMap(query) {
+  let resultSet = new Set();
+  for (let miningMap of miningMapList) {
+    if ((miningMap["map"]).toLowerCase().startsWith(query.toLowerCase())) {
+      resultSet.add(miningMap);
+    }
+  }
+  return resultSet;
+}
+
+function updateMiningTime(guildState, miningMap, minsAgo, channel, trackTime) {
+  if (miningMap != null) {
+    pgPool.connect().then(pgClient => {
+      const selectSql = {
+        text: 'SELECT * FROM mining_map_guild WHERE id_mining_map=$1 AND id_guild=$2',
+        values: [miningMap.id, guildState.id],
+      };
+      return pgClient.query(selectSql).then(res => {
+        let insrtOrUpdtSql = 'INSERT INTO mining_map_guild(id_mining_map,id_guild,track_time)VALUES($1,$2,$3)';
+        if (res.rowCount > 0) {
+          insrtOrUpdtSql = 'UPDATE mining_map_guild SET track_time=$3 WHERE id_mining_map=$1 AND id_guild=$2';
+        }
+        pgClient.query(insrtOrUpdtSql, [miningMap.id, guildState.id, trackTime]).then(res => {
+          pgClient.release();
+        })
+      });
+    });
+
+    let miningMapState = miningTrackAux(guildState, miningMap, minsAgo);
+    refreshMiningMapList(guildState);
+    channel.send(fmtMsg(`${miningMapState.miningMap.map} in ${miningMapState.r1} minutes.`));
+  }
+}
+
+function miningTrackAux(guildState, miningMap, minsAgo) {
+  let miningMapState = guildState.miningMapList.find(miningMapState => miningMapState.miningMap === miningMap);
+  if (!miningMapState) {
+    miningMapState = {miningMap: miningMap};
+    guildState.miningMapList.push(miningMapState);
+  }
+  miningMapState.r1 = 30 - minsAgo;
+  guildState.miningMapList.sort(function(a, b){
+    if(a.r1 > b.r1) {
+      return 1;
+    }
+    if(a.r1 < b.r1) {
+      return -1;
+    }
+    if(a.r1 === b.r1) {
+      return 0;
+    }
+  });
+  return miningMapState;
+}
+
+function refreshMiningMapList(guildState){
+  let list = [];
+  for (let miningMapState of guildState.miningMapList) {
+    if (!miningMapState.r1 && miningMapState.r1 != 0) {
+      miningMapState.r1 = -999;
+    }
+    if (miningMapState.r1 > -20){
+      let respawn = `${Math.round(miningMapState.r1)} mins`;
+      list.push({map: fill(miningMapState.miningMap.map,10), respawn: fill(respawn,18)});
+    } else {
+      guildState.miningMapList.splice(guildState.miningMapList.indexOf(miningMapState), 1);
+    }
+  }
+  let result = "";
+  if (list.length > 0) {
+    let table = asciitable(miningAsciiTableOptions, list);
+    result += "MINING MAPS\n"+table;
+  }
+  if (list.length == 0) {
+    result = "No mining maps have been tracked.";
+  }
+  guildState.miningMapListMessage.edit(fmtMsg(result));
+}
+
+function prepareMiningMapListMsg(message){
+  let guildState = guildMap.get(message.guild.id);
+  guildState.miningMapListMessage = message;
+  refreshMiningMapList(guildState);
+  discordClient.setInterval(function(){
+    refreshMiningMapList(guildState);
+  }, config.mvpListRefreshRateSecs*1000);
+}
+
+
+
+
+
+
+// mvp
+
+function findMvp(query) {
   let resultSet = new Set();
   for (let mvp of mvpList) {
     if ((mvp["name"]+" "+mvp["map"]).toLowerCase().startsWith(query.toLowerCase())) {
@@ -208,11 +317,13 @@ discordClient.on('ready', () => {
       id: guild.id,
       mvpList: [],
       mvpListMessage: null,
-      userStateMap: new Map()
+      userStateMap: new Map(),
+      miningMapList: [],
+      miningMapListMessage: null
     };
     guildMap.set(guild.id, guildState);
-    let mvpListChannel = guild.channels.find("name", config.mvpListChannelName);
 
+    let mvpListChannel = guild.channels.find("name", config.mvpListChannelName);
     mvpListChannel.fetchMessages({ limit: 1 })
       .then(function(messages){
         if (messages.size == 0) {
@@ -229,6 +340,24 @@ discordClient.on('ready', () => {
           }
         }
       });
+
+    let miningMapListChannel = guild.channels.find("name", config.miningListChannelName);
+    miningMapListChannel.fetchMessages({ limit: 1 })
+      .then(function(messages){
+        if (messages.size == 0) {
+          miningMapListChannel.send(fmtMsg("Starting list..."))
+            .then(function(newMsg){
+              prepareMiningMapListMsg(newMsg);
+              guildState.miningMapListMessage = newMsg;
+            });
+        } else {
+          let msg = messages.values().next().value;
+          if (msg.author === discordClient.user) {
+            prepareMiningMapListMsg(msg);
+            guildState.miningMapListMessage = msg;
+          }
+        }
+      });
   }
 
   pgPool.connect().then(pgClient => {
@@ -238,6 +367,7 @@ discordClient.on('ready', () => {
           pgClient.query('INSERT INTO guild(id)VALUES($1)', [discordGuild[0]]);
         }
       }
+
       pgClient.query('SELECT * FROM mvp_guild').then(res => {
         for (let track of res.rows) {
           let minsAgo = (new Date() - track.death_time)/(1000*60);
@@ -247,74 +377,118 @@ discordClient.on('ready', () => {
             trackAux(guildState, mvp, minsAgo);
           }
         }
-        pgClient.release();
       })
+
+      pgClient.query('SELECT * FROM mining_map_guild').then(res => {
+        for (let track of res.rows) {
+          let minsAgo = (new Date() - track.track_time)/(1000*60);
+          let guildState = guildMap.get(track.id_guild);
+          if (guildState) {
+            let miningMap = miningMapList.find(_miningMap => _miningMap.id === track.id_mining_map);
+            miningTrackAux(guildState, miningMap, minsAgo);
+          }
+        }
+      })
+
+      pgClient.release();
     })
   })
 });
 
 discordClient.on('message', msg => {
   let guildState = guildMap.get(msg.channel.guild.id);
-  if (guildState && msg.channel.name === config.userInputChannelName) {
-    if (guildState.userStateMap.has(msg.author)) {
-      let userState = guildState.userStateMap.get(msg.author);
-      let idx = msg.content;
-      if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
-        let mob = userState.resultList[idx-1];
-        let minsAgo = userState.minsAgo;
-        updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
-      } else {
-        msg.channel.send(fmtMsg(`Error: invalid number \"${idx}\" for selection.`));
-      }
-      guildState.userStateMap.delete(msg.author);
-    } else if (msg.content[0] == "!") {
-      let amsg = msg.content.slice(1);
-      let argv = amsg.split(" ");
-      if (argv[0] === "track") {
-        if (argv.length>=2) {
-          let minsAgo = 0;
+  if (guildState) {
+    if (msg.channel.name === config.userInputChannelName) {
+      if (guildState.userStateMap.has(msg.author)) {
+        let userState = guildState.userStateMap.get(msg.author);
+        let idx = msg.content;
+        if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
+          let mob = userState.resultList[idx-1];
+          let minsAgo = userState.minsAgo;
+          updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
+        } else {
+          msg.channel.send(fmtMsg(`Error: invalid number \"${idx}\" for selection.`));
+        }
+        guildState.userStateMap.delete(msg.author);
+      } else if (msg.content[0] == "!") {
+        let amsg = msg.content.slice(1);
+        let argv = amsg.split(" ");
+        if (argv[0] === "track") {
+          if (argv.length>=2) {
+            let minsAgo = 0;
 
-          let queryLastIdx = argv.length-1;
-          if (argv.length>=3 && !isNaN(argv[queryLastIdx])) {
-            minsAgo = argv[queryLastIdx];
-            --queryLastIdx;
-          }
-
-          let mvpQuery = argv[1];
-          for (let idx=2; idx<=queryLastIdx; ++idx) {
-            mvpQuery += " "+argv[idx];
-          }
-
-          let resultSet = findMvp(guildState, mvpQuery);
-          if (resultSet.size == 1) {
-            let mob = resultSet.values().next().value;
-            updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
-          } else if (resultSet.size > 1) {
-            let msgStr = `More than one MVP has been found. Type the number of MVP you want to track:\n`;
-            let i = 1;
-            let resultList = [];
-            for (let mob of resultSet) {
-              msgStr += `${i}. ${mob.name} (${mob.map})\n`;
-              resultList.push(mob);
-              ++i;
+            let queryLastIdx = argv.length-1;
+            if (argv.length>=3 && !isNaN(argv[queryLastIdx])) {
+              minsAgo = argv[queryLastIdx];
+              --queryLastIdx;
             }
-            msg.channel.send(fmtMsg(msgStr))
-            .then(function(message){
-              guildState.userStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
-              discordClient.setTimeout(function(){
-                if (guildState.userStateMap.has(msg.author)) {
-                  msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`));
-                  guildState.userStateMap.delete(msg.author);
-                }
-              }, config.maxSelectionTimeSecs*1000);
-            });
-          } else {
-            msg.channel.send(fmtMsg(`MVP \"${argv[1]}\" not found.`));
+
+            let mvpQuery = argv[1];
+            for (let idx=2; idx<=queryLastIdx; ++idx) {
+              mvpQuery += " "+argv[idx];
+            }
+
+            let resultSet = findMvp(mvpQuery);
+            if (resultSet.size == 1) {
+              let mob = resultSet.values().next().value;
+              updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
+            } else if (resultSet.size > 1) {
+              let msgStr = `More than one MVP has been found. Type the number of MVP you want to track:\n`;
+              let i = 1;
+              let resultList = [];
+              for (let mob of resultSet) {
+                msgStr += `${i}. ${mob.name} (${mob.map})\n`;
+                resultList.push(mob);
+                ++i;
+              }
+              msg.channel.send(fmtMsg(msgStr))
+              .then(function(message){
+                guildState.userStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
+                discordClient.setTimeout(function(){
+                  if (guildState.userStateMap.has(msg.author)) {
+                    msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`));
+                    guildState.userStateMap.delete(msg.author);
+                  }
+                }, config.maxSelectionTimeSecs*1000);
+              });
+            } else {
+              msg.channel.send(fmtMsg(`MVP \"${mvpQuery}\" not found.`));
+            }
           }
         }
+        if (argv[0] === "help") {
+          msg.channel.send(fmtMsg(helpMessage));
+        }
       }
-      if (argv[0] === "help") {
-        msg.channel.send(fmtMsg(helpMessage));
+    } else if (msg.channel.name === config.miningInputChannelName) {
+      if (msg.content[0] == "!") {
+        let amsg = msg.content.slice(1);
+        let argv = amsg.split(" ");
+        if (argv[0] === "track") {
+          if (argv.length>=2) {
+            let minsAgo = 0;
+            let queryLastIdx = argv.length-1;
+            if (argv.length>=3 && !isNaN(argv[queryLastIdx])) {
+              minsAgo = argv[queryLastIdx];
+              --queryLastIdx;
+            }
+
+            let miningMapQuery = argv[1];
+            for (let idx=2; idx<=queryLastIdx; ++idx) {
+              miningMapQuery += " "+argv[idx];
+            }
+
+            let resultSet = findMiningMap(miningMapQuery);
+            if (resultSet.size == 1) {
+              let miningMap = resultSet.values().next().value;
+              updateMiningTime(guildState, miningMap, minsAgo, msg.channel, msg.createdAt);
+            } else if (resultSet.size > 2) {
+              msg.channel.send(fmtMsg(`More than one map starting with \"${miningMapQuery}\" has been found. Be more specific.`));
+            } else {
+              msg.channel.send(fmtMsg(`Map \"${miningMapQuery}\" not found.`));
+            }
+          }
+        }
       }
     }
   }
@@ -330,6 +504,13 @@ pgPool.connect().then(pgClient => {
         pgClient.query(fs.readFileSync('sql/update1.sql', 'utf8'));
       }
     });
+    pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' \
+                    AND tablename=\'mining_map\'').then(res => {
+      if (res.rowCount === 0) {
+        pgClient.query(fs.readFileSync('sql/update2.sql', 'utf8'));
+      }
+    });
+
     pgClient.query('SELECT * FROM mvp').then(res => {
       mvpList = res.rows;
       pgClient.query('SELECT * FROM mvp_alias').then(res => {
@@ -343,8 +524,13 @@ pgPool.connect().then(pgClient => {
           aliasList.push(alias.alias);
         }
       });
-      pgClient.release();
-      discordClient.login(config.botUserToken);
     });
+
+    pgClient.query('SELECT * FROM mining_map').then(res => {
+      miningMapList = res.rows;
+    });
+
+    pgClient.release();
+    discordClient.login(config.botUserToken);
   });
 });
