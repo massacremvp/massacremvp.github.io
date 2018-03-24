@@ -504,6 +504,11 @@ pgPool.connect().then(pgClient => {
         pgClient.query(fs.readFileSync('sql/update1.sql', 'utf8'));
       }
     });
+    pgClient.query('SELECT * FROM mvp WHERE name=\'Gold Queen Scaraba\'').then(res => {
+      if (res.rowCount === 0) {
+        pgClient.query(fs.readFileSync('sql/update3.sql', 'utf8'));
+      }
+    });
     pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' \
                     AND tablename=\'mining_map\'').then(res => {
       if (res.rowCount === 0) {
