@@ -148,6 +148,9 @@ function prepareMiningMapListMsg(message){
   refreshMiningMapList(guildState);
   discordClient.setInterval(function(){
     refreshMiningMapList(guildState);
+    for (let miningMapState of guildState.miningMapList) {
+      miningMapState.r1 -= config.mvpListRefreshRateSecs/60;
+    }
   }, config.mvpListRefreshRateSecs*1000);
 }
 
