@@ -497,31 +497,48 @@ discordClient.on('message', msg => {
   }
 });
 
-pgPool.connect().then(pgClient => {
-  pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\'').then(res => {
-    if (res.rowCount === 0) {
-      pgClient.query(fs.readFileSync('sql/yellowtracker.sql', 'utf8'));
-    }
-    pgClient.query('SELECT * FROM mvp WHERE name=\'Vesper\'').then(res => {
-      if (res.rowCount === 0) {
-        pgClient.query(fs.readFileSync('sql/update1.sql', 'utf8'));
-      }
-    });
-    pgClient.query('SELECT * FROM mvp WHERE name=\'Gold Queen Scaraba\'').then(res => {
-      if (res.rowCount === 0) {
-        pgClient.query(fs.readFileSync('sql/update3.sql', 'utf8'));
-      }
-    });
-    pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' \
-                    AND tablename=\'mining_map\'').then(res => {
-      if (res.rowCount === 0) {
-        pgClient.query(fs.readFileSync('sql/update2.sql', 'utf8'));
-      }
-    });
+pgPool.connect()
+  .then(pgClient => {
+    let createMvpTable = pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' and tablename=\'mvp\'')
+      .then(res => {
+        if (res.rowCount === 0) {
+          return pgClient.query(fs.readFileSync('sql/yellowtracker.sql', 'utf8'))
+        }
+      })
 
-    pgClient.query('SELECT * FROM mvp').then(res => {
-      mvpList = res.rows;
-      pgClient.query('SELECT * FROM mvp_alias').then(res => {
+    let insertVesperMvp = Promise.resolve(createMvpTable)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE name=\'Vesper\'')
+      })
+      .then(res => {
+        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update1.sql', 'utf8'))
+      })
+
+    let createMiningTable = Promise.resolve(insertVesperMvp)
+      .then(() => {
+        return pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' AND tablename=\'mining_map\'')
+      })
+      .then(res => {
+        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update2.sql', 'utf8'))
+      })
+
+    let insertGqsMvp = Promise.resolve(createMiningTable)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE name=\'Gold Queen Scaraba\'')
+      })
+      .then(res => {
+        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update3.sql', 'utf8'))
+      })
+
+    let loadMvps = Promise.resolve(insertGqsMvp)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp')
+      })
+      .then(res => {
+        mvpList = res.rows;
+        return pgClient.query('SELECT * FROM mvp_alias')
+      })
+      .then(res => {
         for (let alias of res.rows) {
           mvp = mvpList.find(mvp => mvp.id === alias.id_mvp);
           let aliasList = mvp.alias;
@@ -531,14 +548,19 @@ pgPool.connect().then(pgClient => {
           }
           aliasList.push(alias.alias);
         }
-      });
-    });
+      })
 
-    pgClient.query('SELECT * FROM mining_map').then(res => {
-      miningMapList = res.rows;
-    });
+    let loadMiningMaps = Promise.resolve(loadMvps)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mining_map')
+      })
+      .then(res => {
+        miningMapList = res.rows;
+      })
 
-    pgClient.release();
-    discordClient.login(config.botUserToken);
-  });
-});
+    Promise.resolve(loadMiningMaps)
+      .then(() => {
+        pgClient.release()
+        discordClient.login(config.botUserToken)
+      })
+  })
