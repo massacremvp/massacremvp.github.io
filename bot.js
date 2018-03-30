@@ -229,7 +229,7 @@ function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
   for (let mvpState of guildState.mvpList) {
-    if (!mvpState.r2 && mvpState.r2 != 0) {
+    if (!mvpState.r2 && mvpState.r2 <= -config.mvpAliveExpirationTimeMins) {
       mvpState.r1 = -999;
       mvpState.r2 = -999;
     }
