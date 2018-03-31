@@ -228,7 +228,9 @@ function trackAux(guildState, mvp, minsAgo) {
 function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
+  console.log("MVP LIST")
   for (let mvpState of guildState.mvpList) {
+    console.log(mvpState)
     if (!mvpState.r2 && mvpState.r2 <= -config.mvpAliveExpirationTimeMins) {
       mvpState.r1 = -999;
       mvpState.r2 = -999;
@@ -416,7 +418,7 @@ discordClient.on('message', msg => {
       } else if (msg.content[0] == "!") {
         let amsg = msg.content.slice(1);
         let argv = amsg.split(" ");
-        if (argv[0] === "track") {
+        if (argv[0] === "track" || argv[0] === "t") {
           if (argv.length>=2) {
             let minsAgo = 0;
 
@@ -467,7 +469,7 @@ discordClient.on('message', msg => {
       if (msg.content[0] == "!") {
         let amsg = msg.content.slice(1);
         let argv = amsg.split(" ");
-        if (argv[0] === "track") {
+        if (argv[0] === "track" || argv[0] === "t") {
           if (argv.length>=2) {
             let minsAgo = 0;
             let queryLastIdx = argv.length-1;
