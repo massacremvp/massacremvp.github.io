@@ -228,9 +228,9 @@ function trackAux(guildState, mvp, minsAgo) {
 function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
-  console.log("MVP LIST")
+  //console.log("MVP LIST")
   for (let mvpState of guildState.mvpList) {
-    console.log(mvpState)
+    //console.log(mvpState)
     if (!mvpState.r2 && mvpState.r2 <= -config.mvpAliveExpirationTimeMins) {
       mvpState.r1 = -999;
       mvpState.r2 = -999;
