@@ -532,7 +532,15 @@ pgPool.connect()
         if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update3.sql', 'utf8'))
       })
 
-    let loadMvps = Promise.resolve(insertGqsMvp)
+    let insertKublinMvp = Promise.resolve(insertGqsMvp)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE name=\'Kublin Vanilla\'')
+      })
+      .then(res => {
+        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/insertKublin.sql', 'utf8'))
+      })
+
+    let loadMvps = Promise.resolve(insertKublinMvp)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })

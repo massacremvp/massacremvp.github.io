@@ -1,8 +1,16 @@
-create sequence mining_map_seq;
-create table mining_map (
-  id int not null default nextval('mining_map_seq'),
-  map text not null,
+CREATE SEQUENCE mining_map_seq;
+
+CREATE TABLE mining_map (
+  id int NOT NULL DEFAULT nextval('mining_map_seq'),
+  map text NOT NULL,
   CONSTRAINT mining_map_pk PRIMARY KEY (id)
+);
+
+CREATE TABLE mining_map_guild (
+  id_mining_map int NOT NULL,
+  id_guild bigint NOT NULL,
+  track_time timestamp NOT NULL,
+  CONSTRAINT mining_map_guild_pk PRIMARY KEY (id_mining_map,id_guild)
 );
 
 INSERT INTO mining_map(map)VALUES('Coal Mine');
@@ -19,10 +27,3 @@ INSERT INTO mining_map(map)VALUES('Comodo Leste');
 INSERT INTO mining_map(map)VALUES('Comodo Oeste');
 INSERT INTO mining_map(map)VALUES('Umbala');
 INSERT INTO mining_map(map)VALUES('Abelha');
-
-create table mining_map_guild (
-  id_mining_map int not null,
-  id_guild bigint not null,
-  track_time timestamp not null,
-  CONSTRAINT mining_map_guild_pk PRIMARY KEY (id_mining_map,id_guild)
-);
