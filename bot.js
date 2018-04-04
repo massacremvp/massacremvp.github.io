@@ -228,9 +228,7 @@ function trackAux(guildState, mvp, minsAgo) {
 function refreshMvpList(guildState){
   let aliveMvps = [];
   let deadMvps = [];
-  //console.log("MVP LIST")
   for (let mvpState of guildState.mvpList) {
-    //console.log(mvpState)
     if (!mvpState.r2 && mvpState.r2 <= -config.mvpAliveExpirationTimeMins) {
       mvpState.r1 = -999;
       mvpState.r2 = -999;
@@ -239,8 +237,6 @@ function refreshMvpList(guildState){
       let list = (Math.round(mvpState.r1)>0) ? deadMvps : aliveMvps;
       let respawn = `${Math.round(mvpState.r1)} to ${Math.round(mvpState.r2)} mins`;
       list.push({name: fill(mvpState.mvp.name,18), map: fill(mvpState.mvp.map,10), respawn: fill(respawn,18)});
-    } else {
-      guildState.mvpList.splice(guildState.mvpList.indexOf(mvpState), 1);
     }
   }
   let result = "";
