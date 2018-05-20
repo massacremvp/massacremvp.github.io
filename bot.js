@@ -297,9 +297,9 @@ function prepareMvpListMsg(message){
               if (mvpsToNotify.length > 0) {
                 return notifyMvpRec();
               }
-              return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
+              //return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
                 voiceChannel.leave();
-              });
+              //});
             });
         };
         notifyMvpRec();
@@ -544,7 +544,15 @@ pgPool.connect()
         if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/updateKublin.sql', 'utf8'))
       })
 
-    let loadMvps = Promise.resolve(updateKublinMvp)
+    let newMvpRespawn = Promise.resolve(updateKublinMvp)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE t2-t1 = 10')
+      })
+      .then(res => {
+        if (res.rowCount != 0) return pgClient.query(fs.readFileSync('sql/newMvpRespawn.sql', 'utf8'))
+      })
+
+    let loadMvps = Promise.resolve(newMvpRespawn)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })
