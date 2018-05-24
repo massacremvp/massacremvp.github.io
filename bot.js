@@ -289,17 +289,19 @@ function prepareMvpListMsg(message){
         }
       }
     }
-    let voiceChannel = message.guild.channels.find("name", config.voiceChannelName); 
-    if (mvpsToNotify.length > 0) {
+    //let voiceChannel = message.guild.channels.find("name", config.voiceChannelName); 
+    let voiceChannel = message.guild.channels.find("name", guildMap.get(message.guild.id).voiceChannelName); 
+
+    if (voiceChannel && mvpsToNotify.length > 0) {
       voiceChannel.join().then(function(voiceConn) {
         let notifyMvpRec = function(){
             let dispatcher = voiceConn.playFile(mvpsToNotify.pop()).on('end', reason => {
               if (mvpsToNotify.length > 0) {
                 return notifyMvpRec();
               }
-              return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
+              //return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
                 voiceChannel.leave();
-              });
+              //});
             });
         };
         notifyMvpRec();
@@ -364,8 +366,11 @@ discordClient.on('ready', () => {
   pgPool.connect().then(pgClient => {
     pgClient.query('SELECT * FROM guild').then(res => {
       for (let discordGuild of discordClient.guilds) {
-        if (!res.rows.find(_guild => _guild.id === discordGuild[0])) {
+        let guildDb = res.rows.find(_guild => _guild.id === discordGuild[0]);
+        if (!guildDb) {
           pgClient.query('INSERT INTO guild(id)VALUES($1)', [discordGuild[0]]);
+        } else {
+          guildMap.get(discordGuild[0]).voiceChannelName = guildDb.voice_channel;
         }
       }
 
@@ -414,6 +419,45 @@ discordClient.on('message', msg => {
       } else if (msg.content[0] == "!") {
         let amsg = msg.content.slice(1);
         let argv = amsg.split(" ");
+        if (argv[0] === "voicechannel" || argv[0] === "vc") {
+          let maxRole;
+          for (let role of msg.guild.roles) {
+            if (!maxRole || maxRole.position < role[1].position) {
+              maxRole = role[1];
+            }
+          }
+
+          if (msg.member.roles.has(maxRole.id)) {
+            if (argv.length>=2) {
+              let newVoiceChannelName = argv[1];
+              for (let idx=2; idx<argv.length; ++idx) {
+                newVoiceChannelName += " "+argv[idx];
+              }
+
+              let voiceChannel = msg.guild.channels.find("name", newVoiceChannelName);
+              if (voiceChannel && voiceChannel.type === "voice") {
+                //config.voiceChannelName = voiceChannel.name;
+                guildState.voiceChannelName = voiceChannel.name;
+                msg.channel.send(fmtMsg(`New voice channel set to \"${newVoiceChannelName}\".`));
+
+                pgPool.connect().then(pgClient => {
+                    insrtOrUpdtSql = 'UPDATE guild SET voice_channel=$1 WHERE id=$2'; 
+                    pgClient.query(insrtOrUpdtSql, [guildState.voiceChannelName, msg.guild.id]).then(res => {
+                      pgClient.release();
+                    })
+                  });
+
+              } else {
+                msg.channel.send(fmtMsg(`Error: invalid voice channel \"${newVoiceChannelName}\".`));
+              }
+            } else {
+              //msg.channel.send(fmtMsg(`Voice channel is currently set to \"${config.voiceChannelName}\".`));
+              msg.channel.send(fmtMsg(`Voice channel is currently set to \"${guildState.voiceChannelName}\".`));
+            }
+          } else {
+            msg.channel.send(fmtMsg(`Error: insufficient permission.`));
+          }
+        }
         if (argv[0] === "track" || argv[0] === "t") {
           if (argv.length>=2) {
             let minsAgo = 0;
@@ -544,7 +588,15 @@ pgPool.connect()
         if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/updateKublin.sql', 'utf8'))
       })
 
-    let loadMvps = Promise.resolve(updateKublinMvp)
+    let newMvpRespawn = Promise.resolve(updateKublinMvp)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE t2-t1 = 10')
+      })
+      .then(res => {
+        if (res.rowCount != 0) return pgClient.query(fs.readFileSync('sql/newMvpRespawn.sql', 'utf8'))
+      })
+
+    let loadMvps = Promise.resolve(newMvpRespawn)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })
