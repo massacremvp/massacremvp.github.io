@@ -23,9 +23,7 @@ Examples:\n \
 var config = {
   databaseUrl: process.env.DATABASE_URL,
   botUserToken: process.env.BOT_USER_TOKEN,
-  userInputChannelName: process.env.USER_INPUT_CHANNEL_NAME,
   mvpListChannelName: process.env.MVP_LIST_CHANNEL_NAME,
-  voiceChannelName: process.env.VOICE_CHANNEL_NAME,
   mvpAliveExpirationTimeMins: process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
   mvpListRefreshRateSecs: process.env.MVP_LIST_REFRESH_RATE_SECS,
   maxSelectionTimeSecs: process.env.MAX_SELECTION_TIME_SECS,
@@ -92,7 +90,6 @@ function updateMiningTime(guildState, miningMap, minsAgo, channel, trackTime) {
 
     let miningMapState = miningTrackAux(guildState, miningMap, minsAgo);
     refreshMiningMapList(guildState);
-    //channel.send(fmtMsg(`${miningMapState.miningMap.map} in ${miningMapState.r1} minutes.`));
     return `${miningMapState.miningMap.map} in ${miningMapState.r1} minutes.`;
   }
 }
@@ -199,7 +196,7 @@ function updateTime(guildState, mvp, minsAgo, channel, deathTime) {
 
     let mvpState = trackAux(guildState, mvp, minsAgo);
     refreshMvpList(guildState);
-    channel.send(fmtMsg(`${mvpState.mvp.name} (${mvpState.mvp.map}) in ${mvpState.r1} to ${mvpState.r2} minutes.`));
+    return `${mvpState.mvp.name} (${mvpState.mvp.map}) in ${mvpState.r1} to ${mvpState.r2} minutes.`;
   }
 }
 
@@ -289,7 +286,6 @@ function prepareMvpListMsg(message){
         }
       }
     }
-    //let voiceChannel = message.guild.channels.find("name", config.voiceChannelName); 
     let voiceChannel = message.guild.channels.find("name", guildMap.get(message.guild.id).voiceChannelName); 
 
     if (voiceChannel && mvpsToNotify.length > 0) {
@@ -355,10 +351,8 @@ discordClient.on('ready', () => {
             });
         } else {
           let msg = messages.values().next().value;
-          //if (msg.author === discordClient.user) {
-            prepareMiningMapListMsg(msg);
-            guildState.miningMapListMessage = msg;
-          //}
+          prepareMiningMapListMsg(msg);
+          guildState.miningMapListMessage = msg;
         }
       });
   }
@@ -405,16 +399,17 @@ discordClient.on('message', msg => {
   if (msg.author != discordClient.user) {
     let guildState = guildMap.get(msg.channel.guild.id);
     if (guildState) {
-      if (msg.channel.name === config.userInputChannelName) {
+      if (msg.channel.name === config.mvpListChannelName) {
+        let botReplyMsg = '';
         if (guildState.userStateMap.has(msg.author)) {
           let userState = guildState.userStateMap.get(msg.author);
           let idx = msg.content;
           if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
             let mob = userState.resultList[idx-1];
             let minsAgo = userState.minsAgo;
-            updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
+            botReplyMsg = updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
           } else {
-            msg.channel.send(fmtMsg(`Error: invalid number \"${idx}\" for selection.`));
+            botReplyMsg = `Error: invalid number \"${idx}\" for selection.`;
           }
           guildState.userStateMap.delete(msg.author);
         } else if (msg.content[0] == "!") {
@@ -437,9 +432,8 @@ discordClient.on('message', msg => {
 
                 let voiceChannel = msg.guild.channels.find("name", newVoiceChannelName);
                 if (voiceChannel && voiceChannel.type === "voice") {
-                  //config.voiceChannelName = voiceChannel.name;
                   guildState.voiceChannelName = voiceChannel.name;
-                  msg.channel.send(fmtMsg(`New voice channel set to \"${newVoiceChannelName}\".`));
+                  botReplyMsg = `New voice channel set to \"${newVoiceChannelName}\".`;
 
                   pgPool.connect().then(pgClient => {
                       insrtOrUpdtSql = 'UPDATE guild SET voice_channel=$1 WHERE id=$2'; 
@@ -449,14 +443,13 @@ discordClient.on('message', msg => {
                     });
 
                 } else {
-                  msg.channel.send(fmtMsg(`Error: invalid voice channel \"${newVoiceChannelName}\".`));
+                  botReplyMsg = `Error: invalid voice channel \"${newVoiceChannelName}\".`;
                 }
               } else {
-                //msg.channel.send(fmtMsg(`Voice channel is currently set to \"${config.voiceChannelName}\".`));
-                msg.channel.send(fmtMsg(`Voice channel is currently set to \"${guildState.voiceChannelName}\".`));
+                botReplyMsg = `Voice channel is currently set to \"${guildState.voiceChannelName}\".`;
               }
             } else {
-              msg.channel.send(fmtMsg(`Error: insufficient permission.`));
+              botReplyMsg = `Error: insufficient permission.`;
             }
           }
           if (argv[0] === "track" || argv[0] === "t") {
@@ -477,7 +470,7 @@ discordClient.on('message', msg => {
               let resultSet = findMvp(mvpQuery);
               if (resultSet.size == 1) {
                 let mob = resultSet.values().next().value;
-                updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
+                botReplyMsg = updateTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
               } else if (resultSet.size > 1) {
                 let msgStr = `More than one MVP has been found. Type the number of MVP you want to track:\n`;
                 let i = 1;
@@ -490,22 +483,32 @@ discordClient.on('message', msg => {
                 msg.channel.send(fmtMsg(msgStr))
                 .then(function(message){
                   guildState.userStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
+                  message.delete(config.maxSelectionTimeSecs*1000);
                   discordClient.setTimeout(function(){
                     if (guildState.userStateMap.has(msg.author)) {
-                      msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`));
+                      msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`)).then(msg => msg.delete(5000));
                       guildState.userStateMap.delete(msg.author);
                     }
                   }, config.maxSelectionTimeSecs*1000);
                 });
               } else {
-                msg.channel.send(fmtMsg(`MVP \"${mvpQuery}\" not found.`));
+                botReplyMsg = `MVP \"${mvpQuery}\" not found.`;
               }
             }
           }
           if (argv[0] === "help") {
-            msg.channel.send(fmtMsg(helpMessage));
+            botReplyMsg = helpMessage;
           }
         }
+
+        if (botReplyMsg) {
+          msg.channel.send(fmtMsg(botReplyMsg)).then(botMsg => {
+            botMsg.delete(5000);
+          });
+        }
+
+        msg.delete(3000);
+
       } else if (msg.channel.name === config.miningListChannelName) {
         let botReplyMsg = '';
         if (msg.content[0] == "!") {
