@@ -317,6 +317,15 @@ function prepareMvpListMsg(message){
   }, config.mvpListRefreshRateSecs*1000);
 }
 
+function deleteMessage(msg, botReplyMsg) {
+  if (botReplyMsg) {
+    msg.channel.send(fmtMsg(botReplyMsg)).then(botMsg => {
+      botMsg.delete(4000);
+    });
+  }
+  msg.delete(3000);
+}
+
 discordClient.on('ready', () => {
   console.log(`Logged in as ${discordClient.user.tag}!`);
 
@@ -543,7 +552,7 @@ discordClient.on('message', msg => {
             botReplyMsg = helpMessage;
           }
         }
-
+        deleteMessage(msg, botReplyMsg);
       } else if (msg.channel.name === config.miningListChannelName) {
         let botReplyMsg = '';
         if (msg.content[0] == "!") {
@@ -579,15 +588,8 @@ discordClient.on('message', msg => {
             }
           }
         }
-
+        deleteMessage(msg, botReplyMsg);
       }
-
-      if (botReplyMsg) {
-        msg.channel.send(fmtMsg(botReplyMsg)).then(botMsg => {
-          botMsg.delete(4000);
-        });
-      }
-      msg.delete(3000);
     }
   } else if (msg.content.startsWith("!bt\n")) {
     let amsg = msg.content.slice(4);
@@ -612,7 +614,7 @@ discordClient.on('message', msg => {
         console.log(`Warning: ${arg} not found (${resultSet.size} results)`);
       }
     }
-    msg.delete(3000);
+    deleteMessage(msg);
   }
 });
 
