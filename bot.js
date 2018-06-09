@@ -433,8 +433,8 @@ discordClient.on('ready', () => {
 });
 
 discordClient.on('message', msg => {
-  let guildState = guildMap.get(msg.channel.guild.id);
   if (msg.author != discordClient.user) {
+    let guildState = guildMap.get(msg.channel.guild.id);
     if (guildState) {
       let botReplyMsg = '';
       if (msg.channel.name === config.mvpListChannelName) {
@@ -591,10 +591,12 @@ discordClient.on('message', msg => {
         deleteMessage(msg, botReplyMsg);
       }
     }
-  } else if (msg.content.startsWith("!bt\n")) {
+  } else if (msg.content.startsWith("!bt ")) {
     let amsg = msg.content.slice(4);
     let argv = amsg.split("\n");
-    for (let arg of argv) {
+    let guildState = guildMap.get(argv[0]);
+    for (let i = 1; i < argv.length; ++i) {
+      arg = argv[i];
       let resultSet = findMvp(arg.trim());
       if (resultSet.size == 1) {
         let mvp = resultSet.values().next().value;
