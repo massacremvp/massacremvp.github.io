@@ -592,43 +592,33 @@ discordClient.on('message', msg => {
       }
     }
   } else if (msg.content.startsWith("!bt ")) {
-    processBotTrackMessage(msg);
+    let amsg = msg.content.slice(4);
+    let argv = amsg.split("\n");
+    let guildState = guildMap.get(argv[0]);
+    for (let i = 1; i < argv.length; ++i) {
+      arg = argv[i];
+      let resultSet = findMvp(arg.trim());
+      if (resultSet.size == 1) {
+        let mvp = resultSet.values().next().value;
+
+        let mvpNotTracked = true;
+        for (let mvpState of guildState.mvpList) {
+          if (mvpState.mvp.id === mvp.id
+                && mvpState.r1 > 0) {
+            mvpNotTracked = false;
+          }
+        }
+
+        if (mvpNotTracked) {
+          updateTime(guildState, mvp, 0, msg.channel, msg.createdAt);
+        }
+      } else {
+        console.log(`Warning: ${arg} not found (${resultSet.size} results)`);
+      }
+    }
+    deleteMessage(msg);
   }
 });
-
-discordClient.on('messageUpdate', (oldMsg, newMsg) => {
-  if (newMsg.author === discordClient.user
-      && newMsg.content.startsWith("!bt ")) {
-    processBotTrackMessage(newMsg);
-  }
-})
-
-function processBotTrackMessage(msg) {
-  let amsg = msg.content.slice(4);
-  let argv = amsg.split("\n");
-  let guildState = guildMap.get(argv[0]);
-  for (let i = 1; i < argv.length; ++i) {
-    arg = argv[i];
-    let resultSet = findMvp(arg.trim());
-    if (resultSet.size == 1) {
-      let mvp = resultSet.values().next().value;
-
-      let mvpNotTracked = true;
-      for (let mvpState of guildState.mvpList) {
-        if (mvpState.mvp.id === mvp.id
-              && mvpState.r1 > 0) {
-          mvpNotTracked = false;
-        }
-      }
-
-      if (mvpNotTracked) {
-        updateTime(guildState, mvp, 0, msg.channel, msg.createdAt);
-      }
-    } else {
-      console.log(`Warning: ${arg} not found (${resultSet.size} results)`);
-    }
-  }
-}
 
 pgPool.connect()
   .then(pgClient => {
