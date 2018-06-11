@@ -296,22 +296,24 @@ function prepareMvpListMsg(message){
         }
       }
     }
-    let voiceChannel = message.guild.channels.find("name", guildMap.get(message.guild.id).voiceChannelName); 
 
-    if (voiceChannel && mvpsToNotify.length > 0) {
-      voiceChannel.join().then(function(voiceConn) {
-        let notifyMvpRec = function(){
-            let dispatcher = voiceConn.playFile(mvpsToNotify.pop()).on('end', reason => {
-              if (mvpsToNotify.length > 0) {
-                return notifyMvpRec();
-              }
-              //return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
-                voiceChannel.leave();
-              //});
-            });
-        };
-        notifyMvpRec();
-      });
+    if (guildMap.get(message.guild.id).voiceChannelName) {
+      let voiceChannel = message.guild.channels.find("name", guildMap.get(message.guild.id).voiceChannelName); 
+      if (voiceChannel && mvpsToNotify.length > 0) {
+        voiceChannel.join().then(function(voiceConn) {
+          let notifyMvpRec = function(){
+              let dispatcher = voiceConn.playFile(mvpsToNotify.pop()).on('end', reason => {
+                if (mvpsToNotify.length > 0) {
+                  return notifyMvpRec();
+                }
+                //return voiceConn.playFile("audio/delay_minimo.mp3").on('end', reason => {
+                  voiceChannel.leave();
+                //});
+              });
+          };
+          notifyMvpRec();
+        });
+      }
     }
     refreshMvpList(guildState);
   }, config.mvpListRefreshRateSecs*1000);
@@ -629,63 +631,7 @@ pgPool.connect()
         }
       })
 
-    let insertVesperMvp = Promise.resolve(createMvpTable)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Vesper\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update1.sql', 'utf8'))
-      })
-
-    let createMiningTable = Promise.resolve(insertVesperMvp)
-      .then(() => {
-        return pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' AND tablename=\'mining_map\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update2.sql', 'utf8'))
-      })
-
-    let insertGqsMvp = Promise.resolve(createMiningTable)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Gold Queen Scaraba\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/update3.sql', 'utf8'))
-      })
-
-    let insertKublinMvp = Promise.resolve(insertGqsMvp)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Kublin Vanilla\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/insertKublin.sql', 'utf8'))
-      })
-
-    let updateKublinMvp = Promise.resolve(insertKublinMvp)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Kublin Unres\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/updateKublin.sql', 'utf8'))
-      })
-
-    let newMvpRespawn = Promise.resolve(updateKublinMvp)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE t2-t1 = 10')
-      })
-      .then(res => {
-        if (res.rowCount != 0) return pgClient.query(fs.readFileSync('sql/newMvpRespawn.sql', 'utf8'))
-      })
-
-    let updateMammothMvp = Promise.resolve(newMvpRespawn)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Hardrock Mammoth\'')
-      })
-      .then(res => {
-        if (res.rowCount == 0) return pgClient.query(fs.readFileSync('sql/updateMammothMvp.sql', 'utf8'))
-      })
-
-    let loadMvps = Promise.resolve(updateMammothMvp)
+    let loadMvps = Promise.resolve(createMvpTable)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })
