@@ -677,7 +677,15 @@ pgPool.connect()
         if (res.rowCount != 0) return pgClient.query(fs.readFileSync('sql/newMvpRespawn.sql', 'utf8'))
       })
 
-    let loadMvps = Promise.resolve(newMvpRespawn)
+    let updateMammothMvp = Promise.resolve(newMvpRespawn)
+      .then(() => {
+        return pgClient.query('SELECT * FROM mvp WHERE name=\'Hardrock Mammoth\'')
+      })
+      .then(res => {
+        if (res.rowCount == 0) return pgClient.query(fs.readFileSync('sql/updateMammothMvp.sql', 'utf8'))
+      })
+
+    let loadMvps = Promise.resolve(updateMammothMvp)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })
