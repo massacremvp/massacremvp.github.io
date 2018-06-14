@@ -435,7 +435,7 @@ discordClient.on('ready', () => {
 });
 
 discordClient.on('message', msg => {
-  if (msg.author != discordClient.user) {
+  if (msg.author != discordClient.user && msg.channel.guild) {
     let guildState = guildMap.get(msg.channel.guild.id);
     if (guildState) {
       let botReplyMsg = '';
