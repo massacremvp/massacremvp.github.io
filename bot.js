@@ -631,15 +631,7 @@ pgPool.connect()
         }
       })
 
-    let insOrcHeroGefFild02 = Promise.resolve(createMvpTable)
-      .then(() => {
-        return pgClient.query('SELECT * FROM mvp WHERE name=\'Orc Hero\' AND map=\'gef_fild02\'')
-      })
-      .then(res => {
-        if (res.rowCount === 0) return pgClient.query(fs.readFileSync('sql/orc_hero_gef_fild02.sql', 'utf8'))
-      })
-
-    let loadMvps = Promise.resolve(insOrcHeroGefFild02)
+    let loadMvps = Promise.resolve(createMvpTable)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
       })
