@@ -6,7 +6,8 @@ Instruções para uso:
 
 1. Adicione o bot ao seu servidor através do link: https://discordapp.com/api/oauth2/authorize?client_id=417462153528737792&permissions=36777024&scope=bot
 
-2. Informe um canal do servidor a ser usado exclusivamente para a marcação de MVPs. Isso é feito através do comando **!setmvpchannel**. Nesse canal o bot mantém uma lista atualizada dos MVPs marcados e o tempo restante de respawn.
+2. Informe um canal do servidor a ser usado exclusivamente para a marcação de MVPs (OBS: recomenda-se fortemente que seja criado um canal novo para esse finalidade). Isso é feito através do comando **!setmvpchannel**. Nesse canal o bot manterá uma lista atualizada dos MVPs marcados e o tempo restante de respawn. Apenas os usuários com a maior *role* no servidor é que pode usar esse comando.
+  - **AVISO**: Depois que esse comando for usado, **TODAS** as mensagens do canal escolhido (caso tenha alguma) serão apagadas e isso será irreversível!!! Ao usar esse comando, tenha certeza de que está escolhendo o canal certo.
 
 3. Use o comando **!track** para marcar os MVPs derrotados. OBS.: Ele só pode ser usado dentro do canal de MVP.
 
