@@ -1,47 +1,45 @@
 /*
-DROP TABLE IF EXISTS mining_map_guild;
-DROP TABLE IF EXISTS mining_map;
+DROP TABLE IF EXISTS mining_guild;
+DROP TABLE IF EXISTS mining;
 DROP TABLE IF EXISTS mvp_guild;
 DROP TABLE IF EXISTS mvp_alias;
 DROP TABLE IF EXISTS mvp;
 DROP TABLE IF EXISTS guild;
 DROP SEQUENCE IF EXISTS mvp_seq;
-DROP SEQUENCE IF EXISTS mining_map_seq;
+DROP SEQUENCE IF EXISTS mining_seq;
 */
 
 CREATE SEQUENCE mvp_seq;
 
-CREATE TABLE guild (
+CREATE TABLE guild
+(
   id bigint NOT NULL,
-  user_input_channel text,
-  voice_channel text,
-  mvp_list_channel text,
-  mvp_alive_expiration_time_mins int,
-  mvp_list_refresh_rate_secs int,
-  max_selection_time_secs int,
+  id_mvp_channel bigint,
+  id_mining_channel bigint,
+  id_voice_channel bigint,
   CONSTRAINT guild_pk PRIMARY KEY (id)
 );
 
 CREATE TABLE mvp (
-  id int NOT NULL DEFAULT nextval('mvp_seq'),
+  id integer NOT NULL DEFAULT nextval('mvp_seq'::regclass),
   name text NOT NULL,
   map text NOT NULL,
-  t1 int NOT NULL,
-  t2 int NOT NULL,
+  t1 integer NOT NULL,
+  t2 integer NOT NULL,
   CONSTRAINT mvp_pk PRIMARY KEY (id)
 );
 
 CREATE TABLE mvp_alias (
-  id_mvp int NOT NULL,
+  id_mvp integer NOT NULL,
   alias text NOT NULL,
-  CONSTRAINT mvp_alias_pk PRIMARY KEY (id_mvp,alias)
+  CONSTRAINT mvp_alias_pk PRIMARY KEY (id_mvp, alias)
 );
 
 CREATE TABLE mvp_guild (
-  id_mvp int NOT NULL,
+  id_mvp integer NOT NULL,
   id_guild bigint NOT NULL,
-  death_time timestamp NOT NULL,
-  CONSTRAINT mvp_guild_pk PRIMARY KEY (id_mvp,id_guild)
+  death_time timestamp without time zone NOT NULL,
+  CONSTRAINT mvp_guild_pk PRIMARY KEY (id_mvp, id_guild)
 );
 
 INSERT INTO mvp(name,map,t1,t2)VALUES('Amon Ra','moc_pryd06',60,70);
@@ -126,38 +124,42 @@ INSERT INTO mvp(name,map,t1,t2)VALUES('Kublin Vanilla','arug_dun01',240,360);
 INSERT INTO mvp(name,map,t1,t2)VALUES('Kublin Unres','schg_dun01',240,360);
 INSERT INTO mvp(name,map,t1,t2)VALUES('Orc Hero','gef_fild02',1440,1450);
 INSERT INTO mvp_alias(id_mvp,alias)VALUES(currval('mvp_seq'),'OH');
+INSERT INTO mvp(name,map,t1,t2)VALUES('[SPECIAL] Maya P.','gld_dun03',20,30);
+INSERT INTO mvp_alias(id_mvp,alias)VALUES(currval('mvp_seq'),'MP Unres');
 
 
 
-CREATE SEQUENCE mining_map_seq;
+CREATE SEQUENCE mining_seq;
 
-CREATE TABLE mining_map (
-  id int NOT NULL DEFAULT nextval('mining_map_seq'),
-  map text NOT NULL,
-  CONSTRAINT mining_map_pk PRIMARY KEY (id)
+CREATE TABLE mining
+(
+  id integer NOT NULL DEFAULT nextval('mining_seq'::regclass),
+  zone text NOT NULL,
+  CONSTRAINT mining_pk PRIMARY KEY (id)
 );
 
-CREATE TABLE mining_map_guild (
-  id_mining_map int NOT NULL,
+CREATE TABLE mining_guild
+(
+  id_mining integer NOT NULL,
   id_guild bigint NOT NULL,
-  track_time timestamp NOT NULL,
-  CONSTRAINT mining_map_guild_pk PRIMARY KEY (id_mining_map,id_guild)
+  track_time timestamp without time zone NOT NULL,
+  CONSTRAINT mining_guild_pk PRIMARY KEY (id_mining, id_guild)
 );
 
-INSERT INTO mining_map(map)VALUES('Coal Mine');
-INSERT INTO mining_map(map)VALUES('Payon');
-INSERT INTO mining_map(map)VALUES('Einbech');
-INSERT INTO mining_map(map)VALUES('Geffen');
-INSERT INTO mining_map(map)VALUES('Thor');
-INSERT INTO mining_map(map)VALUES('Magma');
-INSERT INTO mining_map(map)VALUES('Ice Dungeon');
-INSERT INTO mining_map(map)VALUES('Izlude');
-INSERT INTO mining_map(map)VALUES('Louyang');
-INSERT INTO mining_map(map)VALUES('Comodo Norte');
-INSERT INTO mining_map(map)VALUES('Comodo Leste');
-INSERT INTO mining_map(map)VALUES('Comodo Oeste');
-INSERT INTO mining_map(map)VALUES('Umbala');
-INSERT INTO mining_map(map)VALUES('Abelha');
+INSERT INTO mining(zone)VALUES('Coal Mine');
+INSERT INTO mining(zone)VALUES('Payon');
+INSERT INTO mining(zone)VALUES('Einbech');
+INSERT INTO mining(zone)VALUES('Geffen');
+INSERT INTO mining(zone)VALUES('Thor');
+INSERT INTO mining(zone)VALUES('Magma');
+INSERT INTO mining(zone)VALUES('Ice Dungeon');
+INSERT INTO mining(zone)VALUES('Izlude');
+INSERT INTO mining(zone)VALUES('Louyang');
+INSERT INTO mining(zone)VALUES('Comodo Norte');
+INSERT INTO mining(zone)VALUES('Comodo Leste');
+INSERT INTO mining(zone)VALUES('Comodo Oeste');
+INSERT INTO mining(zone)VALUES('Umbala');
+INSERT INTO mining(zone)VALUES('Abelha');
 
 
 
@@ -204,3 +206,4 @@ UPDATE mvp SET t1=345,t2=375 WHERE name='Atroce' AND map='ve_fild01';
 UPDATE mvp SET t1=405,t2=435 WHERE name='Lady Tanee' AND map='ayo_dun02';
 UPDATE mvp SET t1=645,t2=675 WHERE name='Ifrit' AND map='thor_v03';
 UPDATE mvp SET t1=705,t2=735 WHERE name='Beelzebub' AND map='abbey03';
+
