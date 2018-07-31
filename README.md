@@ -32,64 +32,64 @@ Lista de MVPs:
 
 Nome | Alias | Mapa | Tempo de Respawn
 ---- | ----- | --- | -------
-Amon Ra | - | moc_pryd06 | 45~75 mins |
-Atroce | - | ve_fild02 | 225~255 mins |
-Atroce | - | ve_fild01 | 345~375 mins |
-Atroce | - | ra_fild04 | 165~195 mins |
-Atroce | - | ra_fild02 | 165~195 mins |
-Atroce | - | ra_fild03 | 285~315 mins |
-Baphomet | - | prt_maze03 | 105~135 mins |
-Beelzebub | - | abbey03 | 705~735 mins |
+Amon Ra | - | moc_pryd06 | 60~70 mins |
+Atroce | - | ra_fild02 | 180~190 mins |
+Atroce | - | ra_fild03 | 300~310 mins |
+Atroce | - | ra_fild04 | 180~190 mins |
+Atroce | - | ve_fild01 | 360~370 mins |
+Atroce | - | ve_fild02 | 240~250 mins |
+Baphomet | - | prt_maze03 | 120~130 mins |
+Beelzebub | - | abbey03 | 720~730 mins |
 Bio3 MVP | - | lhz_dun03 | 100~130 mins |
 Bio4 MVP | - | lhz_dun04 | 100~130 mins |
-Boitata | - | bra_dun02 | 105~135 mins |
-Dark Lord | DL | gl_chyard | 45~75 mins |
-Detardeurus | Detale | abyss_03 | 165~195 mins |
-Doppelganger | - | gef_dun02 | 105~135 mins |
-Dracula | - | gef_dun01 | 45~75 mins |
-Drake | - | treasure02 | 105~135 mins |
-Eddga | - | pay_fild11 | 105~135 mins |
-Egnigem Cenia | GEC | lhz_dun02 | 105~135 mins |
-Evil Snake Lord | ESL | gon_dun03 | 79~109 mins |
-Fallen Bishop | FBH | abbey02 | 105~135 mins |
-Garm | Hatii | xmas_fild01 | 105~135 mins |
-Gloom Under Night | - | ra_san05 | 285~315 mins |
+Boitata | - | bra_dun02 | 120~130 mins |
+Dark Lord | DL | gl_chyard | 60~70 mins |
+Detardeurus | Detale | abyss_03 | 180~190 mins |
+Doppelganger | - | gef_dun02 | 120~130 mins |
+Dracula | - | gef_dun01 | 60~70 mins |
+Drake | - | treasure02 | 120~130 mins |
+Eddga | - | pay_fild11 | 120~130 mins |
+Egnigem Cenia | GEC | lhz_dun02 | 120~130 mins |
+Evil Snake Lord | ESL | gon_dun03 | 94~104 mins |
+Fallen Bishop | FBH | abbey02 | 120~130 mins |
+Garm | Hatii | xmas_fild01 | 120~130 mins |
+Gloom Under Night | - | ra_san05 | 300~310 mins |
+Golden Thief Bug | GTB | prt_sewb4 | 60~70 mins |
 Gold Queen Scaraba | GQS | dic_dun03 | 120~120 mins |
-Golden Thief Bug | GTB | prt_sewb4 | 45~75 mins |
-Gopinich | - | mosk_dun03 | 105~135 mins |
+Gopinich | - | mosk_dun03 | 120~130 mins |
 Hardrock Mammoth | Mammoth | man_fild03 | 240~241 mins |
-Ifrit | - | thor_v03 | 645~675 mins |
+Ifrit | - | thor_v03 | 660~670 mins |
 Kiel D-01 | - | kh_dun02 | 120~180 mins |
-Kraken | - | iz_dun05 | 105~135 mins |
+Kraken | - | iz_dun05 | 120~130 mins |
 Ktullanux | - | ice_dun03 | 120~120 mins |
 Kublin Unres | - | schg_dun01 | 240~360 mins |
 Kublin Vanilla | - | arug_dun01 | 240~360 mins |
-Lady Tanee | LT; Tanee | ayo_dun02 | 405~435 mins |
-Leak | - | dew_dun01 | 105~135 mins |
+Lady Tanee | Tanee; LT | ayo_dun02 | 420~430 mins |
+Leak | - | dew_dun01 | 120~130 mins |
 Lord of the Dead | LOD | niflheim | 133~133 mins |
-Maya | - | anthell02 | 105~135 mins |
-Mistress | - | mjolnir_04 | 105~135 mins |
-Moonlight Flower | MF | pay_dun04 | 45~75 mins |
-Nightmare Amon Ra | - | moc_prydn2 | 45~75 mins |
+Maya | - | anthell02 | 120~130 mins |
+Mistress | - | mjolnir_04 | 120~130 mins |
+Moonlight Flower | MF | pay_dun04 | 60~70 mins |
+Nightmare Amon Ra | - | moc_prydn2 | 60~70 mins |
 Orc Hero | OH | gef_fild02 | 1440~1450 mins |
-Orc Hero | OH | gef_fild14 | 45~75 mins |
-Orc Lord | OL | gef_fild10 | 105~135 mins |
+Orc Hero | OH | gef_fild14 | 60~70 mins |
+Orc Lord | OL | gef_fild10 | 120~130 mins |
 Osiris | - | moc_pryd04 | 60~180 mins |
-Pharaoh | - | in_sphinx5 | 45~75 mins |
-Phreeoni | - | moc_fild17 | 105~135 mins |
+Pharaoh | - | in_sphinx5 | 60~70 mins |
+Phreeoni | - | moc_fild17 | 120~130 mins |
 Queen Scaraba | QS | dic_dun02 | 120~121 mins |
-RSX-0806 | - | ein_dun02 | 110~140 mins |
-Samurai Specter | Incantation Samurai | ama_dun03 | 76~106 mins |
-Stormy Knight | SK | xmas_dun02 | 45~75 mins |
-Tao Gunka | - | beach_dun3 | 285~315 mins |
-Tao Gunka | - | beach_dun2 | 285~315 mins |
-Tao Gunka | - | beach_dun | 285~315 mins |
+RSX-0806 | - | ein_dun02 | 125~135 mins |
+Samurai Specter | Incantation Samurai | ama_dun03 | 91~101 mins |
+Stormy Knight | SK | xmas_dun02 | 60~70 mins |
+Tao Gunka | - | beach_dun | 300~310 mins |
+Tao Gunka | - | beach_dun2 | 300~310 mins |
+Tao Gunka | - | beach_dun3 | 300~310 mins |
 Tendrilion | - | spl_fild03 | 60~60 mins |
 Thanatos | - | thana_boss | 120~120 mins |
-Turtle General | TG | tur_dun04 | 45~75 mins |
+Turtle General | TG | tur_dun04 | 60~70 mins |
 Valkyrie Randgris | VR | odin_tem03 | 480~840 mins |
-Vesper | - | jupe_core | 105~135 mins |
-White Lady | Bacsojin | lou_dun03 | 101~131 mins |
+Vesper | - | jupe_core | 120~130 mins |
+White Lady | Bacsojin | lou_dun03 | 116~126 mins |
 Wounded Morroc | WM | moc_fild22 | 720~900 mins |
 [SPECIAL] Maya P. | MP Unres | gld_dun03 | 20~30 mins |
 
