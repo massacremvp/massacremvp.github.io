@@ -33,11 +33,11 @@ Lista de MVPs:
 Nome | Alias | Mapa | Tempo de Respawn
 ---- | ----- | --- | -------
 Amon Ra | - | moc_pryd06 | 60~70 mins |
-Atroce | - | ra_fild02 | 180~190 mins |
-Atroce | - | ra_fild03 | 300~310 mins |
-Atroce | - | ra_fild04 | 180~190 mins |
-Atroce | - | ve_fild01 | 360~370 mins |
-Atroce | - | ve_fild02 | 240~250 mins |
+Atroce | - | ra_fild02 | 240~250 mins |
+Atroce | - | ra_fild03 | 180~190 mins |
+Atroce | - | ra_fild04 | 300~310 mins |
+Atroce | - | ve_fild01 | 180~190 mins |
+Atroce | - | ve_fild02 | 360~370 mins |
 Baphomet | - | prt_maze03 | 120~130 mins |
 Beelzebub | - | abbey03 | 720~730 mins |
 Bio3 MVP | - | lhz_dun03 | 100~130 mins |
