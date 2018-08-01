@@ -353,9 +353,6 @@ discordClient.on('message', msg => {
               }
             }
           }
-          if (argv[0] === "help") {
-            botReplyMsg = helpMessage;
-          }
         }
       } else if (guildState.idMiningChannel && msg.channel.id === guildState.idMiningChannel) {
         if (msg.content[0] == "!") {
