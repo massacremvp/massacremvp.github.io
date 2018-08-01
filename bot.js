@@ -442,13 +442,6 @@ pgPool.connect()
         }
       })
 
-    let adittions = pgClient.query('SELECT * FROM pg_catalog.pg_tables WHERE schemaname=\'public\' and tablename=\'mvp\'')
-      .then(res => {
-        if (res.rowCount === 0) {
-          return pgClient.query(fs.readFileSync('sql/yellowtracker.sql', 'utf8'))
-        }
-      })
-
     let loadMvps = Promise.resolve(createMvpTable)
       .then(() => {
         return pgClient.query('SELECT * FROM mvp')
