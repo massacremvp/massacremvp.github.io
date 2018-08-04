@@ -6,9 +6,9 @@ const { Pool } = require('pg');
 var config = {
   databaseUrl: process.env.DATABASE_URL,
   botUserToken: process.env.BOT_USER_TOKEN,
-  mvpAliveExpirationTimeMins: process.env.MVP_ALIVE_EXPIRATION_TIME_MINS,
-  mvpListRefreshRateSecs: process.env.MVP_LIST_REFRESH_RATE_SECS,
-  maxSelectionTimeSecs: process.env.MAX_SELECTION_TIME_SECS,
+  tableEntryExpirationMins: process.env.TABLE_ENTRY_EXPIRATION_MINS,
+  tableRefreshRateSecs: process.env.TABLE_REFRESH_RATE_SECS,
+  selectionTimeExpirationSecs: process.env.SELECTION_TIME_EXPIRATION_SECS,
 };
 
 var guildMap = new Map();
@@ -28,7 +28,7 @@ const miningAsciiTableOptions = {
   skinny: true,
   intersectionCharacter: "x",
   columns: [
-    {field: "zone", name: "Zone"},
+    {field: "name", name: "Name"},
     {field: "remainingTime", name: "Remaining Time"},
   ],
 };
@@ -38,16 +38,25 @@ const pgPool = new Pool({connectionString: config.databaseUrl});
 var mvpList = [];
 var miningList = [];
 
+process.on('unhandledRejection', (reason, promise) => {
+  handleError(reason)
+})
+
+discordClient.on('error', error => {
+  handleError(error)
+})
+
 discordClient.on('ready', () => {
   console.log(`Logged in as ${discordClient.user.tag}!`);
 
   for (let discordGuild of discordClient.guilds) {
     let guildState = {
       idGuild: discordGuild[0],
-      userStateMap: new Map(),
+      mvpUserStateMap: new Map(),
       idMvpChannel: null,
       idMvpListMessage: null,
       mvpList: [],
+      miningUserStateMap: new Map(),
       idMiningChannel: null,
       idMiningListMessage: null,
       miningList: [],
@@ -113,10 +122,11 @@ discordClient.on('guildCreate', guild => {
   console.log(`Joined to ${guild.name}!`);
   let guildState = {
     idGuild: guild.id,
-    userStateMap: new Map(),
+    mvpUserStateMap: new Map(),
     idMvpChannel: null,
     idMvpListMessage: null,
     mvpList: [],
+    miningUserStateMap: new Map(),
     idMiningChannel: null,
     idMiningListMessage: null,
     miningList: [],
@@ -290,8 +300,8 @@ discordClient.on('message', msg => {
       }
 
       if (guildState.idMvpChannel && msg.channel.id === guildState.idMvpChannel) {
-        if (guildState.userStateMap.has(msg.author)) {
-          let userState = guildState.userStateMap.get(msg.author);
+        if (guildState.mvpUserStateMap.has(msg.author)) {
+          let userState = guildState.mvpUserStateMap.get(msg.author);
           let idx = msg.content;
           if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
             let mob = userState.resultList[idx-1];
@@ -300,7 +310,7 @@ discordClient.on('message', msg => {
           } else {
             botReplyMsg = `Error: invalid number \"${idx}\" for selection.`;
           }
-          guildState.userStateMap.delete(msg.author);
+          guildState.mvpUserStateMap.delete(msg.author);
         } else if (msg.content[0] == "!") {
           let amsg = msg.content.slice(1);
           let argv = amsg.split(" ");
@@ -329,7 +339,7 @@ discordClient.on('message', msg => {
                 let mob = resultSet.values().next().value;
                 botReplyMsg = updateMvpTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
               } else if (resultSet.size > 1) {
-                let msgStr = `More than one MVP has been found. Type the number of MVP you want to track:\n`;
+                let msgStr = `More than one MVP starting with \"${mvpQuery}\" has been found. Type the number of MVP you want to track:\n`;
                 let i = 1;
                 let resultList = [];
                 for (let mob of resultSet) {
@@ -339,14 +349,14 @@ discordClient.on('message', msg => {
                 }
                 msg.channel.send(fmtMsg(msgStr))
                 .then(function(message){
-                  guildState.userStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
-                  message.delete(config.maxSelectionTimeSecs*1000);
+                  guildState.mvpUserStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
+                  message.delete(config.selectionTimeExpirationSecs*1000);
                   discordClient.setTimeout(function(){
-                    if (guildState.userStateMap.has(msg.author)) {
+                    if (guildState.mvpUserStateMap.has(msg.author)) {
                       msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`)).then(msg => msg.delete(5000));
-                      guildState.userStateMap.delete(msg.author);
+                      guildState.mvpUserStateMap.delete(msg.author);
                     }
-                  }, config.maxSelectionTimeSecs*1000);
+                  }, config.selectionTimeExpirationSecs*1000);
                 });
               } else {
                 botReplyMsg = `MVP \"${mvpQuery}\" not found.`;
@@ -355,7 +365,18 @@ discordClient.on('message', msg => {
           }
         }
       } else if (guildState.idMiningChannel && msg.channel.id === guildState.idMiningChannel) {
-        if (msg.content[0] == "!") {
+        if (guildState.miningUserStateMap.has(msg.author)) {
+          let userState = guildState.miningUserStateMap.get(msg.author);
+          let idx = msg.content;
+          if (!isNaN(idx) && idx>0 && idx <= userState.resultList.length) {
+            let mob = userState.resultList[idx-1];
+            let minsAgo = userState.minsAgo;
+            botReplyMsg = updateMiningTime(guildState, mob, minsAgo, msg.channel, msg.createdAt);
+          } else {
+            botReplyMsg = `Error: invalid number \"${idx}\" for selection.`;
+          }
+          guildState.miningUserStateMap.delete(msg.author);
+        } else if (msg.content[0] == "!") {
           let amsg = msg.content.slice(1);
           let argv = amsg.split(" ");
           if (argv[0] === "track" || argv[0] === "t") {
@@ -380,8 +401,26 @@ discordClient.on('message', msg => {
               if (resultSet.size == 1) {
                 let mining = resultSet.values().next().value;
                 botReplyMsg = updateMiningTime(guildState, mining, minsAgo, msg.channel, msg.createdAt);
-              } else if (resultSet.size > 2) {
-                botReplyMsg = `More than one mining zone starting with \"${miningQuery}\" has been found. Be more specific.`;
+              } else if (resultSet.size > 1) {
+                msgStr = `More than one mining zone starting with \"${miningQuery}\" has been found. Type the number of the mining zone you want to track:\n`;
+                let i = 1;
+                let resultList = [];
+                for (let mining of resultSet) {
+                  msgStr += `${i}. ${mining.name}\n`;
+                  resultList.push(mining);
+                  ++i;
+                }
+                msg.channel.send(fmtMsg(msgStr))
+                .then(function(message){
+                  guildState.miningUserStateMap.set(msg.author, {resultList: resultList, minsAgo: minsAgo});
+                  message.delete(config.selectionTimeExpirationSecs*1000);
+                  discordClient.setTimeout(function(){
+                    if (guildState.miningUserStateMap.has(msg.author)) {
+                      msg.channel.send(fmtMsg(`${msg.author.username}: your selection time has been expired.`)).then(msg => msg.delete(5000));
+                      guildState.miningUserStateMap.delete(msg.author);
+                    }
+                  }, config.selectionTimeExpirationSecs*1000);
+                });
               } else {
                 botReplyMsg = `Mining zone \"${miningQuery}\" not found.`;
               }
@@ -524,8 +563,8 @@ function timerMvpList(guildState) {
     let mvpsToNotify = [];
     for (let mvpState of guildState.mvpList) {
       let oldR1 = mvpState.r1;
-      mvpState.r1 -= config.mvpListRefreshRateSecs/60;
-      mvpState.r2 -= config.mvpListRefreshRateSecs/60;
+      mvpState.r1 -= config.tableRefreshRateSecs/60;
+      mvpState.r2 -= config.tableRefreshRateSecs/60;
       if (Math.round(oldR1)==1 && Math.round(mvpState.r1)==0) {
         let fmtName = mvpState.mvp.name.toLowerCase().replace(/ /g, "_");
         let mainPath = `audio/pt-br/mvp/${fmtName}.mp3`;
@@ -558,18 +597,18 @@ function timerMvpList(guildState) {
       });
     }
     refreshMvpList(guildState);
-  }, config.mvpListRefreshRateSecs*1000);
+  }, config.tableRefreshRateSecs*1000);
 }
 
 
 function refreshMvpList(guildState) {
   let trackedMvps = [];
   for (let mvpState of guildState.mvpList) {
-    if (!mvpState.r2 && mvpState.r2 <= -config.mvpAliveExpirationTimeMins) {
+    if (!mvpState.r2 && mvpState.r2 <= -config.tableEntryExpirationMins) {
       mvpState.r1 = -999;
       mvpState.r2 = -999;
     }
-    if (mvpState.r2 > -config.mvpAliveExpirationTimeMins) {
+    if (mvpState.r2 > -config.tableEntryExpirationMins) {
       let remainingTime = `${Math.round(mvpState.r1)} to ${Math.round(mvpState.r2)} mins`;
       trackedMvps.push({name: fill(mvpState.mvp.name,18), map: fill(mvpState.mvp.map,10), remainingTime: fill(remainingTime,18)});
     }
@@ -714,10 +753,10 @@ function initMiningChannel(guildState) {
 function timerMiningList(guildState) {
   discordClient.setInterval(function() {
     for (let miningState of guildState.miningList) {
-      miningState.r1 -= config.mvpListRefreshRateSecs/60;
+      miningState.r1 -= config.tableRefreshRateSecs/60;
     }
     refreshMiningList(guildState);
-  }, config.mvpListRefreshRateSecs*1000);
+  }, config.tableRefreshRateSecs*1000);
 }
 
 
@@ -727,9 +766,9 @@ function refreshMiningList(guildState) {
     if (!miningState.r1 && miningState.r1 != 0) {
       miningState.r1 = -999;
     }
-    if (miningState.r1 > -config.mvpAliveExpirationTimeMins){
+    if (miningState.r1 > -config.tableEntryExpirationMins){
       let remainingTime = `${Math.round(miningState.r1)} mins`;
-      list.push({zone: fill(miningState.mining.zone,10), remainingTime: fill(remainingTime,18)});
+      list.push({name: fill(miningState.mining.name,10), remainingTime: fill(remainingTime,18)});
     }
   }
   let result = "";
@@ -761,7 +800,7 @@ function refreshMiningList(guildState) {
 function findMining(query) {
   let resultSet = new Set();
   for (let mining of miningList) {
-    if ((mining["zone"]).toLowerCase().startsWith(query.toLowerCase())) {
+    if ((mining["name"]).toLowerCase().startsWith(query.toLowerCase())) {
       resultSet.add(mining);
     }
   }
@@ -790,7 +829,7 @@ function updateMiningTime(guildState, mining, minsAgo, channel, trackTime) {
 
     let miningState = trackMiningAux(guildState, mining, minsAgo);
     refreshMiningList(guildState);
-    return `${miningState.mining.zone} in ${miningState.r1} minutes.`;
+    return `${miningState.mining.name} in ${miningState.r1} minutes.`;
   }
 }
 
@@ -828,4 +867,14 @@ function fill(str, num) {
     res+=" ";
   }
   return res;
+}
+
+
+function handleError(err) {
+  if (err.code === 'ENOENT') {
+    console.log('Error: ' + err.message)
+  } else {
+    console.log('Unhandled Rejection at:', err.stack || err)
+    process.exit(1)
+  }
 }

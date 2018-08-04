@@ -134,7 +134,7 @@ CREATE SEQUENCE mining_seq;
 CREATE TABLE mining
 (
   id integer NOT NULL DEFAULT nextval('mining_seq'::regclass),
-  zone text NOT NULL,
+  name text NOT NULL,
   CONSTRAINT mining_pk PRIMARY KEY (id)
 );
 
@@ -146,17 +146,17 @@ CREATE TABLE mining_guild
   CONSTRAINT mining_guild_pk PRIMARY KEY (id_mining, id_guild)
 );
 
-INSERT INTO mining(zone)VALUES('Coal Mine');
-INSERT INTO mining(zone)VALUES('Payon');
-INSERT INTO mining(zone)VALUES('Einbech');
-INSERT INTO mining(zone)VALUES('Geffen');
-INSERT INTO mining(zone)VALUES('Thor');
-INSERT INTO mining(zone)VALUES('Magma');
-INSERT INTO mining(zone)VALUES('Ice Dungeon');
-INSERT INTO mining(zone)VALUES('Izlude');
-INSERT INTO mining(zone)VALUES('Louyang');
-INSERT INTO mining(zone)VALUES('Comodo Norte');
-INSERT INTO mining(zone)VALUES('Comodo Leste');
-INSERT INTO mining(zone)VALUES('Comodo Oeste');
-INSERT INTO mining(zone)VALUES('Umbala');
-INSERT INTO mining(zone)VALUES('Abelha');
+INSERT INTO mining(name)VALUES('Coal Mine');
+INSERT INTO mining(name)VALUES('Payon');
+INSERT INTO mining(name)VALUES('Einbech');
+INSERT INTO mining(name)VALUES('Geffen');
+INSERT INTO mining(name)VALUES('Thor');
+INSERT INTO mining(name)VALUES('Magma');
+INSERT INTO mining(name)VALUES('Ice Dungeon');
+INSERT INTO mining(name)VALUES('Izlude');
+INSERT INTO mining(name)VALUES('Louyang');
+INSERT INTO mining(name)VALUES('Comodo North');
+INSERT INTO mining(name)VALUES('Comodo East');
+INSERT INTO mining(name)VALUES('Comodo West');
+INSERT INTO mining(name)VALUES('Umbala');
+INSERT INTO mining(name)VALUES('Mistress');
