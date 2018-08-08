@@ -295,7 +295,7 @@ discordClient.on('message', msg => {
           }
 
         } else {
-          botReplyMsg = `Error: insufficient permission.`;
+          //botReplyMsg = `Error: insufficient permission.`;
         }
       }
 
