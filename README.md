@@ -1,36 +1,36 @@
 # Yellow Tracker
 
-Yellow Tracker é um bot de discord para marcar MVPs.
+Yellow Tracker is a discord bot to track MVPs.
 
-Instruções para uso:
+Intructions:
 
-1. Adicione o bot ao seu servidor através do link: https://discordapp.com/api/oauth2/authorize?client_id=417462153528737792&permissions=36777024&scope=bot
+1. Add the bot to your server through this link: https://discordapp.com/api/oauth2/authorize?client_id=417462153528737792&permissions=36777024&scope=bot
 
-2. Informe um canal do servidor a ser usado exclusivamente para a marcação de MVPs (OBS: recomenda-se fortemente que seja criado um canal novo para esse finalidade). Isso é feito através do comando **!setmvpchannel**. Nesse canal o bot manterá uma lista atualizada dos MVPs marcados e o tempo restante de respawn. Apenas os usuários com a maior *role* no servidor é que pode usar esse comando.
-  - **AVISO**: Depois que esse comando for usado, **TODAS** as mensagens do canal escolhido (caso tenha alguma) serão apagadas e isso será irreversível!!! Ao usar esse comando, tenha certeza de que está escolhendo o canal certo.
+2. Define a channel from server to be used exclusively for MVP tracking (OBS: is strongly recommeded that you use a new channel for this). This is done using the **!setmvpchannel** command. The bot in this channel will keep a list of tracked MVPs and their respective respawn times. Only users with highest role from server can use this command.
+  - **WARNING**: After you use this command, **ALL** messages from channel (if there is any) will be erased and this will be irreversible!!! Be sure that you are choosing the right channel.
 
-3. Use o comando **!track** para marcar os MVPs derrotados. OBS.: Ele só pode ser usado dentro do canal de MVP.
+3. Use the **!track** commad to track a MVP that has been defeated. OBS.: can only be used inside MVP channel.
 
-4. O bot pode ser configurado também para falar o nome do MVP em um canal de voz toda vez que um MVP marcado atingir o delay mínimo. Utilize o comando **!setvoicechannel** para definir em qual canal de voz o bot vai entrar para anunciar. Feito isso, toda vez que um MVP atingir o respawn mínimo, o bot entrará nesse canal e pronunciará o nome do MVP. OBS.: caso não queira mais que o bot entre no canal de voz, utilize o comando **!unsetvoicechannel**.
+4. The bot also can be configured to speak the MVP nanme in a voice channel everytime a tracked MVP reachs the minimun respawn time. Use the **!setvoicechannel** command to define a voice channel that bot will enter and speak. OBS.: if you don't want the bot entering voice channel anymore, use the **!unsetvoicechannel** command.
 
-5. Além de MVPs, o bot também pode ser utilizado para marcar zonas de mineração, onde uma zona representa um ou mais mapas de mineração com características em comum (por exemplo, a zona de mineração "Ice Dungeon" corresponde aos mapas "ice_dun01", "ice_dun02" e "ice_dun03"). Da mesma forma que a marcação de MVPs, é preciso configurar um canal que será usado exclusivamente para marcar as zonas de mineração. Utilize o comando **!setminingchannel**. Nesse canal será mantida a lista das áreas de mineração marcadas.
+5. In  addition to MVPs, the bot also can be used to track mining zones, where each zone represents one or more mining maps with characteristics in common (for instance, the mining zone "Ice Dungeon" corresponds to the "ice_dun01", "ice_dun02" and "ice_dun03" maps). As well as MVPs, you need to define a channel to be used exclusively to track mining zones. Use the **!setminingchannel** command. This channel will keep the list of tracked mining zones.
 
-Lista de comandos:
+Command list:
 
-Comando | Descrição
+Command | Description
 ------- | ---------
-**!setmvpchannel NAME** | Habilita o canal **NAME** como canal de MVP. 
-**!setminingchannel NAME** | Habilita o canal **NAME** como canal de mineração. 
-**!setvoicechannel NAME** | Habilita o canal **NAME** como canal de voz. 
-**!unsetmvpchannel** | Desabilita o canal de MVP.
-**!unsetminingchannel** | Desabilita o canal de mineração.
-**!unsetvoicechannel** | Desabilita o canal de voz.
-**!settings** | Mostra as configurações do bot no servidor.
-**!track NAME TIME** ou **!t NAME TIME** | Informa que o MVP **NAME** morreu há **TIME** minutos atrás. O argumento **TIME** é opcional. Não informá-lo significa que o MVP morreu agora. No canal de mineração, esse comando informa que a zona de mineração **NAME** foi visitada há **TIME** minutos atrás.
+**!setmvpchannel NAME** | Set the **NAME** channel as MVP channel. 
+**!setminingchannel NAME** | Set the **NAME** channel as mining channel. 
+**!setvoicechannel NAME** | Set the **NAME** channel as voice channel. 
+**!unsetmvpchannel** | Disable the MVP channel.
+**!unsetminingchannel** | Disable the mining channel.
+**!unsetvoicechannel** | Disables the voice channel.
+**!settings** | Display the bot settings on the server.
+**!track NAME TIME** or **!t NAME TIME** | Report that MVP **NAME** died **TIME** minutes ago. The **TIME** argument is optional. If you ommit this argument means the MVP has died just now. In the mining channel, this command reports that the mining zone **NAME** was visited **TIME** minutes ago.
 
-Lista de MVPs:
+MVP List:
 
-Nome | Alias | Mapa | Tempo de Respawn
+Name | Alias | Map | Respawn Time
 ---- | ----- | --- | -------
 Amon Ra | - | moc_pryd06 | 60~70 mins |
 Atroce | - | ra_fild02 | 240~250 mins |
@@ -93,21 +93,21 @@ White Lady | Bacsojin | lou_dun03 | 116~126 mins |
 Wounded Morroc | WM | moc_fild22 | 720~900 mins |
 [SPECIAL] Maya P. | MP Unres | gld_dun03 | 20~30 mins |
 
-Zonas de mineração:
+Mining zones:
 
-Nome|
+Name|
 ----|
-Abelha|
 Coal Mine|
-Comodo Leste|
-Comodo Norte|
-Comodo Oeste|
+Comodo East|
+Comodo North|
+Comodo West|
 Einbech|
 Geffen|
 Ice Dungeon|
 Izlude|
 Louyang|
 Magma|
+Mistress|
 Payon|
 Thor|
 Umbala|
