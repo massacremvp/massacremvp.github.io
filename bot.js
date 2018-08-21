@@ -48,8 +48,9 @@ discordClient.on('error', error => {
 
 discordClient.on('ready', () => {
   console.log(`Logged in as ${discordClient.user.tag}!`);
-
+  console.log(`Connected to ${discordClient.guilds.size} guild(s).`);
   for (let discordGuild of discordClient.guilds) {
+    console.log(discordGuild[1].name);
     let guildState = {
       idGuild: discordGuild[0],
       mvpUserStateMap: new Map(),
@@ -76,6 +77,14 @@ discordClient.on('ready', () => {
           guildMap.get(discordGuild[0]).idMvpChannel = guildDb.id_mvp_channel;
           guildMap.get(discordGuild[0]).idMiningChannel = guildDb.id_mining_channel;
           guildMap.get(discordGuild[0]).idVoiceChannel = guildDb.id_voice_channel;
+        }
+
+        for (let guildDb of res.rows) {
+          if (!discordClient.guilds.get(guildDb.id)) {
+            pgClient.query('DELETE FROM mvp_guild WHERE id_guild=$1', [guildDb.id]);
+            pgClient.query('DELETE FROM mining_guild WHERE id_guild=$1', [guildDb.id]);
+            pgClient.query('DELETE FROM guild WHERE id=$1', [guildDb.id]);
+          }
         }
 
         pgClient.query('SELECT * FROM mvp_guild').then(res => {
@@ -141,6 +150,18 @@ discordClient.on('guildCreate', guild => {
         }
         pgClient.release();
       })
+  })
+});
+
+
+discordClient.on('guildDelete', guild => {
+  console.log(`Withdrawn from ${guild.name}.`);
+  guildMap.set(guild.id, null);
+  pgPool.connect().then(pgClient => {
+    pgClient.query('DELETE FROM mvp_guild WHERE id_guild=$1', [guild.id]);
+    pgClient.query('DELETE FROM mining_guild WHERE id_guild=$1', [guild.id]);
+    pgClient.query('DELETE FROM guild WHERE id=$1', [guild.id]);
+    pgClient.release();
   })
 });
 
@@ -556,7 +577,10 @@ function initMvpChannel(guildState) {
 
 function timerMvpList() {
   discordClient.setInterval(function() {
-    for (let [,guildState] of guildMap) {
+    for (let discordGuild of discordClient.guilds) {
+      let guild = discordGuild[1];
+      let guildState = guildMap.get(guild.id);
+
       let mvpsToNotify = [];
       for (let mvpState of guildState.mvpList) {
         let oldR1 = mvpState.r1;
@@ -576,25 +600,23 @@ function timerMvpList() {
         }
       }
 
-      let guild = discordClient.guilds.get(guildState.idGuild);
-      if (guild) {
-        let voiceChannel = guild.channels.get(guildState.idVoiceChannel);
-        if (voiceChannel && mvpsToNotify.length > 0) {
-          voiceChannel.join().then(function(voiceConn) {
-            voiceConn.playFile("audio/pt-br/init.mp3").on('end', reason => {          
-              let notifyMvpRec = function() {
-                voiceConn.playFile(mvpsToNotify.pop()).on('end', reason => {
-                  if (mvpsToNotify.length > 0) {
-                    return notifyMvpRec();
-                  }
-                  voiceChannel.leave();
-                });
-              };
-              notifyMvpRec();
-            });
+      let voiceChannel = guild.channels.get(guildState.idVoiceChannel);
+      if (voiceChannel && mvpsToNotify.length > 0) {
+        voiceChannel.join().then(function(voiceConn) {
+          voiceConn.playFile("audio/pt-br/init.mp3").on('end', reason => {          
+            let notifyMvpRec = function() {
+              voiceConn.playFile(mvpsToNotify.pop()).on('end', reason => {
+                if (mvpsToNotify.length > 0) {
+                  return notifyMvpRec();
+                }
+                voiceChannel.leave();
+              });
+            };
+            notifyMvpRec();
           });
-        }
+        });
       }
+
       refreshMvpList(guildState);
     }
   }, config.tableRefreshRateSecs*1000);
@@ -756,7 +778,9 @@ function initMiningChannel(guildState) {
 
 function timerMiningList() {
   discordClient.setInterval(function() {
-    for (let [,guildState] of guildMap) {
+    for (let discordGuild of discordClient.guilds) {
+      let guild = discordGuild[1];
+      let guildState = guildMap.get(guild.id);
       for (let miningState of guildState.miningList) {
         miningState.r1 -= config.tableRefreshRateSecs/60;
       }
