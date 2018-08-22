@@ -8,7 +8,7 @@
   },
   "engines": {
     "npm": "6.4.0"
-  }
+  },
   "dependencies": {
     "asciitable": "0.0.7",
     "pg": "7.4.3",
