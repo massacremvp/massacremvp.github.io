@@ -1,5 +1,5 @@
 {
-  "name": "yellow-tracker",
+  "name": "yellowtracker",
   "version": "1.0.0",
   "description": "",
   "main": "bot.js",
@@ -9,18 +9,18 @@
   },
   "dependencies": {
     "asciitable": "0.0.7",
-    "pg": "^7.4.1",
-    "discord.js": "^11.3.0",
-    "ffmpeg-binaries": "^3.2.2-3",
-    "node-opus": "^0.2.7"
+    "pg": "7.4.3",
+    "discord.js": "11.4.2",
+    "ffmpeg-binaries": "4.0.0",
+    "node-opus": "0.3.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/victorgawk/yellow-tracker.git"
+    "url": "git+https://github.com/victorgawk/yellowtracker.git"
   },
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/victorgawk/yellow-tracker/issues"
+    "url": "https://github.com/victorgawk/yellowtracker/issues"
   },
-  "homepage": "https://github.com/victorgawk/yellow-tracker#readme"
+  "homepage": "https://github.com/victorgawk/yellowtracker#readme"
 }
