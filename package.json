@@ -1,12 +1,14 @@
 {
   "name": "yellowtracker",
+  "description": "Ragnarok MVP tracker for discord",
   "version": "1.0.0",
-  "description": "",
   "main": "bot.js",
   "scripts": {
-    "start": "node bot.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node bot.js"
   },
+  "engines": {
+    "npm": "6.4.0"
+  }
   "dependencies": {
     "asciitable": "0.0.7",
     "pg": "7.4.3",
