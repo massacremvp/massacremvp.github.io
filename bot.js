@@ -167,150 +167,138 @@ discordClient.on('guildDelete', guild => {
 
 
 discordClient.on('message', msg => {
+  if (msg.type !== 'DEFAULT') return;
   if (msg.author != discordClient.user && msg.channel.guild) {
     let guildState = guildMap.get(msg.channel.guild.id);
     if (guildState) {
       let botReplyMsg = '';
 
-      if (msg.content[0] == "!") {
+      if (msg.content[0] == "!" && msg.member.hasPermission('ADMINISTRATOR')) {
         let amsg = msg.content.slice(1);
         let argv = amsg.split(" ");
 
-        let maxRole = 0;
-        for (let role of msg.guild.roles) {
-          if (!maxRole || maxRole.position < role[1].position) {
-            maxRole = role[1];
+        if (argv[0] === "settings") {
+          let mvpChannel = msg.guild.channels.get(guildState.idMvpChannel);
+          let miningChannel = msg.guild.channels.get(guildState.idMiningChannel);
+          let voiceChannel = msg.guild.channels.get(guildState.idVoiceChannel);
+          botReplyMsg = "MVP channel:";
+          if (mvpChannel) botReplyMsg += ` ${mvpChannel.name}`;
+
+          botReplyMsg += "\nMining channel:"; 
+          if (miningChannel) botReplyMsg += ` ${miningChannel.name}`;
+
+          botReplyMsg += "\nVoice channel:"; 
+          if (voiceChannel) botReplyMsg += ` ${voiceChannel.name}`;
+        }
+
+        if (argv[0] === "unsetmvpchannel") {
+          guildState.idMvpChannel = null;
+          botReplyMsg = `MVP channel unset.`;
+          pgPool.connect().then(pgClient => {
+              insrtOrUpdtSql = 'UPDATE guild SET id_mvp_channel=NULL WHERE id=$1'; 
+              pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
+                pgClient.release();
+              })
+            });
+        }
+        if (argv[0] === "setmvpchannel") {
+          if (argv.length>=2) {
+            let newMvpChannelName = argv[1];
+            for (let idx=2; idx<argv.length; ++idx) {
+              newMvpChannelName += " "+argv[idx];
+            }
+            let mvpChannel = msg.guild.channels.find(chn => chn.name === newMvpChannelName);
+            if (mvpChannel && mvpChannel.type === "text") {
+              guildState.idMvpChannel = mvpChannel.id;
+              guildState.idMvpListMessage = null;
+              initMvpChannel(guildState);
+              botReplyMsg = `New MVP channel set to \"${newMvpChannelName}\".`;
+              pgPool.connect().then(pgClient => {
+                  insrtOrUpdtSql = 'UPDATE guild SET id_mvp_channel=$1 WHERE id=$2'; 
+                  pgClient.query(insrtOrUpdtSql, [mvpChannel.id, msg.guild.id]).then(res => {
+                    pgClient.release();
+                  })
+                });
+            } else {
+              botReplyMsg = `Error: invalid MVP channel \"${newMvpChannelName}\".`;
+            }
+          } else {
+            botReplyMsg = `Error: missing argument.`;
           }
         }
 
-        if (msg.member.roles.has(maxRole.id)) {
-
-          if (argv[0] === "settings") {
-            let mvpChannel = msg.guild.channels.get(guildState.idMvpChannel);
-            let miningChannel = msg.guild.channels.get(guildState.idMiningChannel);
-            let voiceChannel = msg.guild.channels.get(guildState.idVoiceChannel);
-            botReplyMsg = "MVP channel:";
-            if (mvpChannel) botReplyMsg += ` ${mvpChannel.name}`;
-
-            botReplyMsg += "\nMining channel:"; 
-            if (miningChannel) botReplyMsg += ` ${miningChannel.name}`;
-
-            botReplyMsg += "\nVoice channel:"; 
-            if (voiceChannel) botReplyMsg += ` ${voiceChannel.name}`;
-          }
-
-          if (argv[0] === "unsetmvpchannel") {
-            guildState.idMvpChannel = null;
-            botReplyMsg = `MVP channel unset.`;
-            pgPool.connect().then(pgClient => {
-                insrtOrUpdtSql = 'UPDATE guild SET id_mvp_channel=NULL WHERE id=$1'; 
-                pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
-                  pgClient.release();
-                })
-              });
-          }
-          if (argv[0] === "setmvpchannel") {
-            if (argv.length>=2) {
-              let newMvpChannelName = argv[1];
-              for (let idx=2; idx<argv.length; ++idx) {
-                newMvpChannelName += " "+argv[idx];
-              }
-              let mvpChannel = msg.guild.channels.find("name", newMvpChannelName);
-              if (mvpChannel && mvpChannel.type === "text") {
-                guildState.idMvpChannel = mvpChannel.id;
-                guildState.idMvpListMessage = null;
-                initMvpChannel(guildState);
-                botReplyMsg = `New MVP channel set to \"${newMvpChannelName}\".`;
-                pgPool.connect().then(pgClient => {
-                    insrtOrUpdtSql = 'UPDATE guild SET id_mvp_channel=$1 WHERE id=$2'; 
-                    pgClient.query(insrtOrUpdtSql, [mvpChannel.id, msg.guild.id]).then(res => {
-                      pgClient.release();
-                    })
-                  });
-              } else {
-                botReplyMsg = `Error: invalid MVP channel \"${newMvpChannelName}\".`;
-              }
-            } else {
-              botReplyMsg = `Error: missing argument.`;
+        if (argv[0] === "unsetminingchannel") {
+          guildState.idMiningChannel = null;
+          botReplyMsg = `Mining channel unset.`;
+          pgPool.connect().then(pgClient => {
+              insrtOrUpdtSql = 'UPDATE guild SET id_mining_channel=NULL WHERE id=$1'; 
+              pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
+                pgClient.release();
+              })
+            });
+        }
+        if (argv[0] === "setminingchannel") {
+          if (argv.length>=2) {
+            let newMiningChannelName = argv[1];
+            for (let idx=2; idx<argv.length; ++idx) {
+              newMiningChannelName += " "+argv[idx];
             }
-          }
-
-          if (argv[0] === "unsetminingchannel") {
-            guildState.idMiningChannel = null;
-            botReplyMsg = `Mining channel unset.`;
-            pgPool.connect().then(pgClient => {
-                insrtOrUpdtSql = 'UPDATE guild SET id_mining_channel=NULL WHERE id=$1'; 
-                pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
-                  pgClient.release();
-                })
-              });
-          }
-          if (argv[0] === "setminingchannel") {
-            if (argv.length>=2) {
-              let newMiningChannelName = argv[1];
-              for (let idx=2; idx<argv.length; ++idx) {
-                newMiningChannelName += " "+argv[idx];
-              }
-              let miningChannel = msg.guild.channels.find("name", newMiningChannelName);
-              if (miningChannel && miningChannel.type === "text") {
-                guildState.idMiningChannel = miningChannel.id;
-                guildState.idMiningListMessage = null;
-                initMiningChannel(guildState);
-                if (msg.channel != miningChannel) {
-                  botReplyMsg = `New mining channel set to \"${newMiningChannelName}\".`;
-                } else {
-                  deleteUserMessage = false;
-                }
-                pgPool.connect().then(pgClient => {
-                    insrtOrUpdtSql = 'UPDATE guild SET id_mining_channel=$1 WHERE id=$2'; 
-                    pgClient.query(insrtOrUpdtSql, [miningChannel.id, msg.guild.id]).then(res => {
-                      pgClient.release();
-                    })
-                  });
+            let miningChannel = msg.guild.channels.find(chn => chn.name === newMiningChannelName);
+            if (miningChannel && miningChannel.type === "text") {
+              guildState.idMiningChannel = miningChannel.id;
+              guildState.idMiningListMessage = null;
+              initMiningChannel(guildState);
+              if (msg.channel != miningChannel) {
+                botReplyMsg = `New mining channel set to \"${newMiningChannelName}\".`;
               } else {
-                botReplyMsg = `Error: invalid mining channel \"${newMiningChannelName}\".`;
+                deleteUserMessage = false;
               }
+              pgPool.connect().then(pgClient => {
+                  insrtOrUpdtSql = 'UPDATE guild SET id_mining_channel=$1 WHERE id=$2'; 
+                  pgClient.query(insrtOrUpdtSql, [miningChannel.id, msg.guild.id]).then(res => {
+                    pgClient.release();
+                  })
+                });
             } else {
-              botReplyMsg = `Error: missing argument.`;
+              botReplyMsg = `Error: invalid mining channel \"${newMiningChannelName}\".`;
             }
+          } else {
+            botReplyMsg = `Error: missing argument.`;
           }
+        }
 
-          if (argv[0] === "unsetvoicechannel") {
-            guildState.idVoiceChannel = null;
-            botReplyMsg = `Voice channel unset.`;
-            pgPool.connect().then(pgClient => {
-                insrtOrUpdtSql = 'UPDATE guild SET id_voice_channel=NULL WHERE id=$1'; 
-                pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
-                  pgClient.release();
-                })
-              });
-          }
-          if (argv[0] === "setvoicechannel") {
-            if (argv.length>=2) {
-              let newVoiceChannelName = argv[1];
-              for (let idx=2; idx<argv.length; ++idx) {
-                newVoiceChannelName += " "+argv[idx];
-              }
-              let voiceChannel = msg.guild.channels.find("name", newVoiceChannelName);
-              if (voiceChannel && voiceChannel.type === "voice") {
-                guildState.idVoiceChannel = voiceChannel.id;
-                botReplyMsg = `New voice channel set to \"${newVoiceChannelName}\".`;
-                pgPool.connect().then(pgClient => {
-                    insrtOrUpdtSql = 'UPDATE guild SET id_voice_channel=$1 WHERE id=$2'; 
-                    pgClient.query(insrtOrUpdtSql, [voiceChannel.id, msg.guild.id]).then(res => {
-                      pgClient.release();
-                    })
-                  });
-              } else {
-                botReplyMsg = `Error: invalid voice channel \"${newVoiceChannelName}\".`;
-              }
+        if (argv[0] === "unsetvoicechannel") {
+          guildState.idVoiceChannel = null;
+          botReplyMsg = `Voice channel unset.`;
+          pgPool.connect().then(pgClient => {
+              insrtOrUpdtSql = 'UPDATE guild SET id_voice_channel=NULL WHERE id=$1'; 
+              pgClient.query(insrtOrUpdtSql, [msg.guild.id]).then(res => {
+                pgClient.release();
+              })
+            });
+        }
+        if (argv[0] === "setvoicechannel") {
+          if (argv.length>=2) {
+            let newVoiceChannelName = argv[1];
+            for (let idx=2; idx<argv.length; ++idx) {
+              newVoiceChannelName += " "+argv[idx];
+            }
+            let voiceChannel = msg.guild.channels.find(chn => chn.name === newVoiceChannelName);
+            if (voiceChannel && voiceChannel.type === "voice") {
+              guildState.idVoiceChannel = voiceChannel.id;
+              botReplyMsg = `New voice channel set to \"${newVoiceChannelName}\".`;
+              pgPool.connect().then(pgClient => {
+                  insrtOrUpdtSql = 'UPDATE guild SET id_voice_channel=$1 WHERE id=$2'; 
+                  pgClient.query(insrtOrUpdtSql, [voiceChannel.id, msg.guild.id]).then(res => {
+                    pgClient.release();
+                  })
+                });
             } else {
-              botReplyMsg = `Error: missing argument.`;
+              botReplyMsg = `Error: invalid voice channel \"${newVoiceChannelName}\".`;
             }
+          } else {
+            botReplyMsg = `Error: missing argument.`;
           }
-
-        } else {
-          //botReplyMsg = `Error: insufficient permission.`;
         }
       }
 
@@ -554,6 +542,7 @@ function initMvpChannel(guildState) {
         .then(function(messages){
           let messagesToDelete = [];
           for (let pastMessage of messages) {
+            if (pastMessage[1].type !== 'DEFAULT') continue;
             if (discordClient.user === pastMessage[1].author && !guildState.idMvpListMessage) {
               guildState.idMvpListMessage = pastMessage[0];
               refreshMvpList(guildState);
@@ -755,6 +744,7 @@ function initMiningChannel(guildState) {
         .then(function(messages){
           let messagesToDelete = [];
           for (let pastMessage of messages) {
+            if (pastMessage[1].type !== 'DEFAULT') continue;
             if (discordClient.user === pastMessage[1].author && !guildState.idMiningListMessage) {
               guildState.idMiningListMessage = pastMessage[0];
               refreshMiningList(guildState);

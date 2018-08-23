@@ -7,14 +7,15 @@
     "start": "node bot.js"
   },
   "engines": {
-    "npm": "6.4.0"
+    "node": "8.11.4",
+    "npm": "5.6.0"
   },
   "dependencies": {
     "asciitable": "0.0.7",
     "pg": "7.4.3",
     "discord.js": "11.4.2",
     "ffmpeg-binaries": "4.0.0",
-    "node-opus": "0.3.0"
+    "node-opus": "0.2.7"
   },
   "repository": {
     "type": "git",
