@@ -550,7 +550,8 @@ function initMvpChannel(guildState) {
             }
             messagesToDelete.push(pastMessage[1]);
           }
-          mvpChannel.bulkDelete(messagesToDelete);
+          mvpChannel.bulkDelete(messagesToDelete)
+            .catch(err => {});
           if (!guildState.idMvpListMessage) {
             mvpChannel.send(fmtMsg("Starting list..."))
               .then(function(newMsg){
@@ -752,7 +753,8 @@ function initMiningChannel(guildState) {
             }
             messagesToDelete.push(pastMessage[1]);
           }
-          miningChannel.bulkDelete(messagesToDelete);
+          miningChannel.bulkDelete(messagesToDelete)
+            .catch(err => {});
           if (!guildState.idMiningListMessage) {
             miningChannel.send(fmtMsg("Starting list..."))
               .then(function(newMsg) {
