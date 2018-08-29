@@ -4,7 +4,7 @@ Yellow Tracker is a discord bot to track MVPs.
 
 Intructions:
 
-1. Add the bot to your server through this link: https://discordapp.com/api/oauth2/authorize?client_id=417462153528737792&permissions=36777024&scope=bot
+1. Add the bot to your server through this link: https://discordapp.com/oauth2/authorize?client_id=417462153528737792&permissions=8192&scope=bot
 
 2. Define a channel from server to be used exclusively for MVP tracking (OBS: is strongly recommeded that you use a new channel for this). This is done using the **!setmvpchannel** command. The bot in this channel will keep a list of tracked MVPs and their respective respawn times. Only users with highest role from server can use this command.
   - **WARNING**: After you use this command, **ALL** messages from channel (if there is any) will be erased and this will be irreversible!!! Be sure that you are choosing the right channel.
