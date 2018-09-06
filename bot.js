@@ -898,6 +898,7 @@ function handleError(err) {
   if (err.code === 'ENOENT' || err.code === 'ECONNRESET') {
     console.log('Error: ' + err.message)
   } else {
+    console.log('Error Code: ', err.code)
     console.log('Unhandled Rejection at:', err.stack || err)
     process.exit(1)
   }
